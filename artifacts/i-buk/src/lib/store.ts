@@ -123,6 +123,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isFinitePositive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const isValidTime = (value: unknown) => isString(value) && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+const isValidDate = (value: unknown) => {
+  if (!isString(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
 const timeMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
 type Parentable = { id: string; parentId?: string };
 const hasParentCycle = <T extends Parentable>(items: T[]) => {
@@ -140,7 +146,7 @@ const hasParentCycle = <T extends Parentable>(items: T[]) => {
 };
 
 const normalizeSession = (value: unknown, topics: Topic[]): Session | null => {
-  if (!isRecord(value) || !isString(value.id) || !isString(value.topicId) || !isString(value.date) || !isFinitePositive(value.minutes)) return null;
+  if (!isRecord(value) || !isString(value.id) || !isString(value.topicId) || !isValidDate(value.date) || !isFinitePositive(value.minutes)) return null;
   const topic = topics.find((item) => item.id === value.topicId);
   if (!topic) return null;
   const durationMinutes = isFinitePositive(value.durationMinutes) ? value.durationMinutes : value.minutes;
@@ -165,8 +171,8 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
   const rawTopics = value.topics;
   const exams = value.exams;
   if (!courses.every((item) => isRecord(item) && isString(item.id) && isString(item.code) && isString(item.name) && isString(item.color))) return null;
-  if (!rawTopics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isString(item.lastStudied)))) return null;
-  if (!exams.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isString(item.date) && typeof item.complete === 'boolean' && (item.time === undefined || isString(item.time)))) return null;
+   if (!rawTopics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isValidDate(item.lastStudied)))) return null;
+   if (!exams.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isValidDate(item.date) && typeof item.complete === 'boolean' && (item.time === undefined || isValidTime(item.time)))) return null;
 
   const topics = rawTopics.map((item, index) => ({
     id: item.id as string,
