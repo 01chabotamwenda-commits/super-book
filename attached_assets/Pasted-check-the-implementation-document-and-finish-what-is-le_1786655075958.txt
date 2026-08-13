@@ -1,0 +1,64 @@
+check the implementation document and finish what is left:
+
+9 minutes ago
+I’ll review the implementation status/playbook, compare its remaining items with the current app, then complete only the unfinished work and verify the managed preview again.
+
+
+
+6 actions
+This is an architectural change rather than a small fix: the status document lists several independent unfinished areas, including Windows file selection/relinking/media handling, restart-safe notifications, persistence, reliability tests, optional Gemini, optional Supabase auth/sync, and release decisions. Some items require a real Windows 11 machine or product decisions, so I won’t silently choose those for you.
+
+My recommended scope is to complete every code-addressable core item in the current project—desktop file choose/check/relink/media states, notifications, durable desktop persistence, renderer/Electron reliability coverage, lint/format CI, and release documentation—while explicitly deferring manual Windows installer verification and the optional Gemini/Supabase product integrations unless you choose them.
+
+
+Scope
+Complete everything, including both Gemini and Supabase
+Additional comments
+but gemini and supabase was already implemented and tested so you can skip it
+
+Worked for 22 seconds
+Thanks—that confirms the scope. I’ll treat Gemini and Supabase as already covered and focus on the remaining core desktop/reliability backlog: file choose/check/relink and media states, restart-safe reminders, durable desktop persistence, tests/CI coverage, and updating the status document to reflect what is actually completed versus what still needs a Windows machine.
+
+
+
+19 actions
+I’ve mapped the remaining work to the existing boundaries. I’m keeping the browser preview behavior intact, adding the desktop-only capabilities behind the existing preload bridge, and using small Node-testable helpers for path inspection, persistence, and restart-safe reminder state so the new behavior can be verified on this Linux host even though installer verification still requires Windows 11.
+
+
+
+14 actions
+The renderer bridge and UI paths are now wired. I’m checking the compile surface next, then I’ll fix any type or Electron IPC issues before adding CI/status-document coverage.
+
+
+
+20 actions
+Typecheck and desktop tests are clean. The existing repository uses intentionally compact formatting in the large renderer and Electron files, so I’m keeping CI’s formatter scope narrow and adding syntax checks for the desktop boundary rather than forcing an unrelated whole-file reformat.
+
+
+
+21 actions
+The production build passes. I’ve also narrowed the CI formatting step to a reliable root-config check plus strict desktop package JSON parsing, while keeping desktop source syntax/tests explicit. Next I’m restarting the managed preview and validating the proxied app itself.
+
+
+
+9 actions
+One persistence edge case surfaced during final review: a packaged first launch now seeds the main-process store from the browser fallback, and any later sync result is mirrored back to desktop storage. I’m re-running the final checks after that reliability fix.
+
+
+
+Show less
+
+Checked for code errors
+
+Ran tests
+
+Built the project
+$ PORT=4173 BASE_PATH=/ pnpm --filter @workspace/i-buk run build
+
+
+Viewed code changes
+You've reached your daily free quota limit. It will reset at 12:00 AM UTC.
+
+
+Worked for 6 minutes
+also i now expect the app to be connected to supabase database usnig the details i provided in secretes and no mock data left
