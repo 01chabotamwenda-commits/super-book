@@ -26,5 +26,16 @@ jobs:
         run: pnpm --filter @workspace/i-buk run typecheck
       - name: Test local domain logic
         run: pnpm --filter @workspace/i-buk run test
+      - name: Check config formatting
+        run: |
+          pnpm exec prettier --check package.json
+          node -e "JSON.parse(require('node:fs').readFileSync('desktop/package.json', 'utf8'))"
+      - name: Check desktop JavaScript syntax
+        run: |
+          node --check desktop/main.cjs
+          node --check desktop/preload.cjs
+          node --check desktop/path-utils.cjs
+          node --check desktop/workspace-store.cjs
+          node --test desktop/path-utils.test.cjs desktop/workspace-store.test.cjs
       - name: Build i-Buk preview
         run: PORT=4173 BASE_PATH=/ pnpm --filter @workspace/i-buk run build

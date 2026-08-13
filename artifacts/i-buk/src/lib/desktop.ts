@@ -2,6 +2,29 @@ import type { Material } from './store';
 
 type DesktopResult = { ok: boolean; message?: string };
 
+export type LocalPathMetadata = {
+  ok: boolean;
+  path?: string;
+  exists?: boolean;
+  isFile?: boolean;
+  isDirectory?: boolean;
+  sizeBytes?: number;
+  modifiedAt?: string | null;
+  mimeType?: string | null;
+  previewKind?: 'image' | 'video' | null;
+  previewUrl?: string | null;
+  message?: string;
+};
+
+export type ChosenFile = LocalPathMetadata & { canceled?: boolean };
+
+export type DesktopReminder = {
+  id: string;
+  title: string;
+  body: string;
+  reminder: string;
+};
+
 export type DesktopWindowControls = {
   minimize: () => Promise<boolean>;
   toggleMaximize: () => Promise<boolean>;
@@ -12,7 +35,13 @@ export type DesktopWindowControls = {
 
 type DesktopBridge = {
   openPath: (path: string) => Promise<DesktopResult>;
-  copyPath?: (path: string) => Promise<DesktopResult>;
+  chooseFile?: () => Promise<ChosenFile>;
+  checkPath?: (path: string) => Promise<LocalPathMetadata>;
+  loadWorkspace?: () => Promise<unknown>;
+  saveWorkspace?: (workspace: unknown) => Promise<DesktopResult>;
+  syncReminders?: (reminders: DesktopReminder[]) => Promise<DesktopResult>;
+  cancelReminder?: (id: string) => Promise<DesktopResult>;
+  getStatus?: () => Promise<{ notifications: boolean }>;
   windowControls?: DesktopWindowControls;
 };
 
@@ -23,6 +52,46 @@ const bridge = () => {
 
 export function getDesktopWindowControls(): DesktopWindowControls | undefined {
   return bridge()?.windowControls;
+}
+
+export function hasDesktopFileBridge() {
+  return Boolean(bridge()?.chooseFile && bridge()?.checkPath);
+}
+
+export async function chooseLocalFile(): Promise<ChosenFile | null> {
+  const desktop = bridge();
+  if (!desktop?.chooseFile) return null;
+  return desktop.chooseFile();
+}
+
+export async function checkLocalPath(path: string): Promise<LocalPathMetadata | null> {
+  const desktop = bridge();
+  if (!desktop?.checkPath) return null;
+  return desktop.checkPath(path);
+}
+
+export async function loadDesktopWorkspace(): Promise<unknown | null> {
+  const desktop = bridge();
+  if (!desktop?.loadWorkspace) return null;
+  return desktop.loadWorkspace();
+}
+
+export async function saveDesktopWorkspace(workspace: unknown): Promise<DesktopResult | null> {
+  const desktop = bridge();
+  if (!desktop?.saveWorkspace) return null;
+  return desktop.saveWorkspace(workspace);
+}
+
+export async function syncDesktopReminders(reminders: DesktopReminder[]): Promise<DesktopResult | null> {
+  const desktop = bridge();
+  if (!desktop?.syncReminders) return null;
+  return desktop.syncReminders(reminders);
+}
+
+export async function getDesktopStatus(): Promise<{ notifications: boolean } | null> {
+  const desktop = bridge();
+  if (!desktop?.getStatus) return null;
+  return desktop.getStatus();
 }
 
 export async function openMaterialReference(material: Material): Promise<DesktopResult> {

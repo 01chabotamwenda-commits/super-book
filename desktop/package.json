@@ -8,7 +8,8 @@
   "scripts": {
     "prepare:renderer": "node prepare-renderer.mjs",
     "start": "npm run prepare:renderer && electron .",
-    "dist:win": "npm run prepare:renderer && electron-builder --win nsis --x64"
+    "dist:win": "npm run prepare:renderer && electron-builder --win nsis --x64",
+    "test": "node --test path-utils.test.cjs workspace-store.test.cjs"
   },
   "devDependencies": {
     "electron": "^37.2.6",
