@@ -134,7 +134,7 @@ export const recommendations = (workspace: Workspace, dayOffset: number, referen
     }
   });
   return workspace.topics
-    .filter((topic) => topic.status !== 'done')
+    .filter((topic) => topic.status !== 'done' && (dayOffset !== 0 || summaries.get(topic.id)?.lastStudied !== referenceDate))
     .map((topic) => {
       const course = workspace.courses.find((item) => item.id === topic.courseId);
       if (!course) return null;

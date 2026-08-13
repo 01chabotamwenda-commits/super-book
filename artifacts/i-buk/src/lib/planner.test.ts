@@ -42,6 +42,24 @@ test('neglected topics prioritize never-studied and oldest active topics', () =>
   assert.equal(neglected.some((item) => item.topic.status === 'done'), false);
 });
 
+test('today recommendations exclude topics studied today', () => {
+  const workspace = sampleWorkspace();
+  workspace.sessions.push({
+    id: 'today-session',
+    courseId: 'course-cog',
+    topicId: 'topic-research',
+    date: '2026-08-13',
+    minutes: 30,
+    durationMinutes: 30,
+    startedAt: '2026-08-13T16:00:00',
+    endedAt: '2026-08-13T16:30:00',
+    source: 'quick-log',
+  });
+
+  assert.equal(recommendations(workspace, 0, '2026-08-13').some((item) => item.topic.id === 'topic-research'), false);
+  assert.equal(recommendations(workspace, 1, '2026-08-13').some((item) => item.topic.id === 'topic-research'), true);
+});
+
 test('completed exams no longer add urgency to recommendations', () => {
   const source = sampleWorkspace();
   const workspace = {
