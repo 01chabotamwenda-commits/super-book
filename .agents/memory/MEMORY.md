@@ -1,1 +1,2 @@
 - [Artifact preview routing](artifact-preview-routing.md) — keep the workflow port aligned with the artifact service port; validate `.replit` replacements through Replit’s config flow.
+- [Responsive layout constraints](responsive-layout-constraints.md) — nested grids need shrink-safe tracks and must yield secondary metadata before content columns collide.

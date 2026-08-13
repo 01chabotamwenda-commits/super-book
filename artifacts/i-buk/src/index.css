@@ -100,3 +100,51 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .fade-up-3 { animation: fade-up .45s .16s ease both; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Keep nested page layouts from letting long labels force neighboring columns wider. */
+main,
+main > div,
+main [class*='grid'],
+main [class*='flex'] {
+  min-width: 0;
+}
+
+main [class*='grid-cols-'] > *,
+main [class*='flex'] > *,
+main button,
+main a {
+  min-width: 0;
+}
+
+/* The page shell is too narrow for side-by-side panels below these breakpoints. */
+@media (max-width: 1279px) {
+  main [class*='xl:grid-cols-'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 1199px) {
+  main [class*='lg:grid-cols-'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  main [class*='md:grid-cols-'],
+  main [class*='sm:grid-cols-'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Topic rows share space with References, so their optional metadata must yield
+   before the title and action buttons start competing for the same pixels. */
+@media (max-width: 1599px) {
+  main [class*='grid-cols-[1fr_100px_100px_80px]'] {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  main [class*='grid-cols-[1fr_100px_100px_80px]'] > :nth-child(2),
+  main [class*='grid-cols-[1fr_100px_100px_80px]'] > :nth-child(3) {
+    display: none;
+  }
+}
