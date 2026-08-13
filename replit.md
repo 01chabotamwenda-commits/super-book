@@ -1,15 +1,17 @@
-# [Project name]
+# i-Buk Study Planner
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+i-Buk is a local-first study workspace for organizing courses and local material references, logging study time, tracking exams, and receiving understandable study recommendations.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/i-buk run dev` — run the i-Buk preview
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- The i-Buk preview workflow supplies `PORT` and `BASE_PATH`; a manual build can use `PORT=4173 BASE_PATH=/ pnpm --filter @workspace/i-buk run build`.
+- The current i-Buk build is local-first and does not require `DATABASE_URL`, Supabase, or Gemini to provide its basic functionality.
 
 ## Stack
 
@@ -22,23 +24,37 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/i-buk/src/App.tsx` — routes, screens, deterministic scheduler, and local CRUD interactions.
+- `artifacts/i-buk/src/lib/store.ts` — local workspace types, starter data, and localStorage persistence.
+- `artifacts/i-buk/src/lib/desktop.ts` — narrow desktop bridge seam for opening local references without putting filesystem access in the UI.
+- `artifacts/i-buk/src/index.css` — i-Buk visual language and responsive shell styling.
+- `.github/workflows/i-buk.yml` — GitHub Actions install, typecheck, and preview build checks.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Core study data stays on-device so the app remains useful offline and does not upload study material bytes.
+- Local files are represented as metadata/reference paths only; a future Electron preload bridge can safely provide OS file opening.
+- Recommendations are deterministic and explainable. Exam timing and topic freshness lead; study frequency is retained as history, not importance.
+- Cloud sync and AI are optional seams, not prerequisites for basic study workflows.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Today dashboard with next focus and daily study intention.
+- Course library with nested topics, local file references, web links, and quick study logging.
+- Exam timetable with completion status, optional times, and availability settings.
+- Lightweight notes/reminders, local JSON import/export, statistics, and simple recommendations for today, tomorrow, or the next seven days.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Keep the product simple, local-first, and professional.
+- Do not upload or store the contents of PDFs, Word files, spreadsheets, slides, videos, images, audio, or other study files.
+- Do not add social features, gamification, flashcards, quizzes, collaboration, or an AI chatbot.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Use the managed `artifacts/i-buk: web` workflow for preview; it supplies `PORT` and `BASE_PATH`.
+- Use `pnpm --filter @workspace/i-buk run typecheck` for the normal leaf-package check.
+- Browser preview can store local paths but cannot open arbitrary OS files; packaged Electron should implement the `ibukDesktop.openPath` bridge from `src/lib/desktop.ts`.
 
 ## Pointers
 

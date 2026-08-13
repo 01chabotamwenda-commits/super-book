@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "i-Buk Study Planner"
+description = "A local-first desktop-oriented study management app for organizing course materials, logging study time, tracking exams, and generating understandable study recommendations without depending on cloud storage or AI."
+version = "1.0.0"
+id = "artifacts/i-buk"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23263
+
+[services.development]
+run = "pnpm --filter @workspace/i-buk run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/i-buk", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/i-buk/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23263"
+BASE_PATH = "/"
