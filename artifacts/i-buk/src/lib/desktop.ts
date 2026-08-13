@@ -14,8 +14,14 @@ const bridge = () => {
 
 export async function openMaterialReference(material: Material): Promise<DesktopResult> {
   if (material.kind === 'link') {
-    window.open(material.reference, '_blank', 'noopener,noreferrer');
-    return { ok: true };
+    try {
+      const url = new URL(material.reference);
+      if (!['http:', 'https:'].includes(url.protocol)) return { ok: false, message: 'Only web links can be opened here.' };
+      const opened = window.open(url.toString(), '_blank', 'noopener,noreferrer');
+      return opened ? { ok: true } : { ok: false, message: 'Your browser blocked the new tab. Allow pop-ups to open this link.' };
+    } catch {
+      return { ok: false, message: 'That web link is not valid.' };
+    }
   }
 
   const desktop = bridge();
