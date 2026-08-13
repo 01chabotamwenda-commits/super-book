@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: gemini
+    description: Study-planning assistance powered by Gemini
 paths:
   /healthz:
     get:
@@ -24,6 +26,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /gemini/explain:
+    post:
+      operationId: explainGeminiSchedule
+      tags: [gemini]
+      summary: Explain deterministic study suggestions
+      description: Returns a concise explanation of structured i-Buk study recommendations.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeminiExplanationInput"
+      responses:
+        "200":
+          description: Schedule explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeminiExplanation"
+        "400":
+          description: Invalid request
+        "502":
+          description: Gemini is unavailable or returned invalid output
+        "503":
+          description: Gemini is not configured
 components:
   schemas:
     HealthStatus:
@@ -33,4 +60,71 @@ components:
           type: string
       required:
         - status
+    GeminiRecommendation:
+      type: object
+      properties:
+        topic:
+          type: string
+          minLength: 1
+        course:
+          type: string
+          minLength: 1
+        minutes:
+          type: number
+          format: float
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+      required:
+        - topic
+        - course
+        - minutes
+        - reason
+    GeminiExam:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        course:
+          type: string
+          minLength: 1
+        timing:
+          type: string
+          minLength: 1
+      required:
+        - title
+        - course
+        - timing
+    GeminiExplanationInput:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/GeminiRecommendation"
+        upcomingExams:
+          type: array
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/GeminiExam"
+        availability:
+          type: string
+          minLength: 1
+          maxLength: 240
+      required:
+        - recommendations
+        - upcomingExams
+        - availability
+    GeminiExplanation:
+      type: object
+      properties:
+        explanation:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - explanation
 
