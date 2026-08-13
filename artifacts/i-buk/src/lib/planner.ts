@@ -1,4 +1,7 @@
 import type { Course, Session, Topic, Workspace } from './store';
+import { addDays, dateKey, daysUntil } from './time.ts';
+
+export { addDays, dateKey, daysUntil } from './time.ts';
 
 export type Recommendation = { topic: Topic; course: Course; reason: string; score: number };
 export type StudyBlock = {
@@ -32,20 +35,6 @@ export type NeglectedTopic = {
   daysSinceStudied: number | undefined;
   reason: string;
 };
-
-export const dateKey = (value = new Date()) => {
-  const date = new Date(value);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
-
-export const addDays = (date: string, amount: number) => {
-  const value = new Date(`${date}T12:00:00`);
-  value.setDate(value.getDate() + amount);
-  return value.toISOString().slice(0, 10);
-};
-
-export const daysUntil = (date: string, referenceDate = dateKey()) =>
-  Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${referenceDate}T12:00:00`).getTime()) / 86400000);
 
 export const minutesBetween = (start: string, end: string) => {
   const [startHour, startMinute] = start.split(':').map(Number);

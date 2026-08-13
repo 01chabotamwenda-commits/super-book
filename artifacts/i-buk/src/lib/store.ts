@@ -1,3 +1,5 @@
+import { addDays, dateKey } from './time.ts';
+
 export const CURRENT_WORKSPACE_VERSION = 2;
 
 export type Course = { id: string; code: string; name: string; color: string };
@@ -69,12 +71,7 @@ export type Workspace = {
 };
 
 const key = 'ibuk-workspace-v1';
-const isoDay = (offset: number) => {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + offset);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const isoDay = (offset: number) => addDays(dateKey(), offset);
 const id = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 const atNoon = (date: string) => `${date}T12:00:00`;
 const atEnd = (date: string, minutes: number) => new Date(new Date(atNoon(date)).getTime() + minutes * 60000).toISOString();
