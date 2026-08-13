@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "O_v7SZR68ANPGGnAK0QSA"
+uri = "file://attached_assets/i-Buk_Implementation_Gap_Analysis.docx"
+type = "word_document"
+title = "i-Buk Implementation Gap Analysis"
+description = "A stage-by-stage comparison of the attached development playbook against the current i-Buk implementation, with concrete implementation recommendations and a prioritized roadmap."
