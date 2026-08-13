@@ -7,3 +7,10 @@ uri = "file://attached_assets/i-Buk_Implementation_Gap_Analysis.docx"
 type = "word_document"
 title = "i-Buk Implementation Gap Analysis"
 description = "A stage-by-stage comparison of the attached development playbook against the current i-Buk implementation, with concrete implementation recommendations and a prioritized roadmap."
+
+[[outputs]]
+id = "3IyUItZW3l8jaUipB8UI9"
+uri = "file://attached_assets/i-Buk_Implementation_Gap_Analysis_Updated.docx"
+type = "word_document"
+title = "i-Buk Implementation Gap Analysis — Updated"
+description = "Updated status report marking the browser milestone completed, documenting verified checks, and listing the remaining Electron, filesystem, notifications, integrations, testing, and packaging work. The original analysis is preserved inside the document as a historical baseline."
