@@ -24,13 +24,13 @@ args = "i-Buk Study Planner"
 name = "i-Buk Study Planner"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/i-buk run dev"
-waitForPort = 5173
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/i-buk run dev"
+waitForPort = 3000
 
 [agent]
 stack = "PNPM_WORKSPACE"
