@@ -47,7 +47,9 @@ jobs:
 
       - name: Install Electron dependencies
         working-directory: desktop
-        run: npm ci
+        run: |
+          node -e "const fs = require('fs'); const file = 'package-lock.json'; const lock = fs.readFileSync(file, 'utf8'); fs.writeFileSync(file, lock.replaceAll('http://package-firewall.replit.local/npm/', 'https://registry.npmjs.org/'));"
+          npm ci --registry=https://registry.npmjs.org
 
       - name: Build Windows installer
         working-directory: desktop
