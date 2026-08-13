@@ -7,4 +7,4 @@ The managed workflow’s advertised port must match the artifact service’s `lo
 
 **Why:** The development server can be healthy on its bound port while the artifact route points at a different port, producing a misleading “couldn’t reach this app” preview.
 
-**How to apply:** When cloning or importing an artifact, compare `.replit` workflow `PORT`/`waitForPort` with the artifact service metadata. Update `.replit` only through the platform’s validated replacement flow, then restart and verify the actual proxied URL.
+**How to apply:** When cloning or importing an artifact, compare `.replit` workflow `PORT`/`waitForPort` with the artifact service metadata. Keep only the artifact-owned workflow for a service; a legacy workflow on the same port causes the managed workflow to fail with “Port ... is already in use.” Update `.replit` only through the platform’s validated replacement flow, then restart and verify the actual proxied URL.
