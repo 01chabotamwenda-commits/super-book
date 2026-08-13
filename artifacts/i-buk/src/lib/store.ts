@@ -124,6 +124,20 @@ const isString = (value: unknown): value is string => typeof value === 'string';
 const isFinitePositive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const isValidTime = (value: unknown) => isString(value) && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const timeMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+type Parentable = { id: string; parentId?: string };
+const hasParentCycle = <T extends Parentable>(items: T[]) => {
+  const parentById = new Map(items.map((item) => [item.id, item.parentId]));
+  return items.some((item) => {
+    const visited = new Set<string>();
+    let current: string | undefined = item.id;
+    while (current) {
+      if (visited.has(current)) return true;
+      visited.add(current);
+      current = parentById.get(current);
+    }
+    return false;
+  });
+};
 
 const normalizeSession = (value: unknown, topics: Topic[]): Session | null => {
   if (!isRecord(value) || !isString(value.id) || !isString(value.topicId) || !isString(value.date) || !isFinitePositive(value.minutes)) return null;
@@ -165,6 +179,8 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
     status: item.status as Topic['status'],
     important: item.important as boolean,
   }));
+  const topicById = new Map(topics.map((topic) => [topic.id, topic]));
+  if (topics.some((topic) => topic.parentId && (!topicById.has(topic.parentId) || topicById.get(topic.parentId)?.courseId !== topic.courseId)) || hasParentCycle(topics)) return null;
   const rawFolders = Array.isArray(value.folders) ? value.folders : [];
   if (!rawFolders.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.name) && (item.parentId === undefined || isString(item.parentId)) && (item.topicId === undefined || isString(item.topicId)))) return null;
   const folders = rawFolders.map((item, index) => ({
@@ -175,6 +191,8 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
     name: item.name as string,
     sortOrder: typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder) ? item.sortOrder : index,
   }));
+  const folderById = new Map(folders.map((folder) => [folder.id, folder]));
+  if (folders.some((folder) => folder.parentId && (!folderById.has(folder.parentId) || folderById.get(folder.parentId)?.courseId !== folder.courseId)) || hasParentCycle(folders)) return null;
   const rawMaterials = Array.isArray(value.materials) ? value.materials : [];
   const rawNotes = Array.isArray(value.notes) ? value.notes : [];
   const profile = value.profile;
@@ -228,8 +246,21 @@ export const newId = id;
 export const storageKey = key;
 
 export const topicDescendantIds = (workspace: Workspace, rootId: string): string[] => {
-  const children = workspace.topics.filter((topic) => topic.parentId === rootId);
-  return children.flatMap((child) => [child.id, ...topicDescendantIds(workspace, child.id)]);
+  const descendants: string[] = [];
+  const visited = new Set([rootId]);
+  const visit = (parentId: string) => {
+    workspace.topics
+      .filter((topic) => topic.parentId === parentId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((child) => {
+        if (visited.has(child.id)) return;
+        visited.add(child.id);
+        descendants.push(child.id);
+        visit(child.id);
+      });
+  };
+  visit(rootId);
+  return descendants;
 };
 
 export const canSetTopicParent = (workspace: Workspace, topicId: string, parentId?: string) => {
@@ -263,8 +294,21 @@ export const reorderTopic = (workspace: Workspace, topicId: string, direction: -
 };
 
 export const folderDescendantIds = (workspace: Workspace, rootId: string): string[] => {
-  const children = workspace.folders.filter((folder) => folder.parentId === rootId);
-  return children.flatMap((child) => [child.id, ...folderDescendantIds(workspace, child.id)]);
+  const descendants: string[] = [];
+  const visited = new Set([rootId]);
+  const visit = (parentId: string) => {
+    workspace.folders
+      .filter((folder) => folder.parentId === parentId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((child) => {
+        if (visited.has(child.id)) return;
+        visited.add(child.id);
+        descendants.push(child.id);
+        visit(child.id);
+      });
+  };
+  visit(rootId);
+  return descendants;
 };
 
 export const canSetFolderParent = (workspace: Workspace, folderId: string, parentId?: string) => {

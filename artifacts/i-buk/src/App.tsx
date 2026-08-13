@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
-import { canSetTopicParent, moveFolder, moveTopic, type Availability, type Course, type Exam, type Folder, type Material, type Note, type Topic, type Workspace, loadWorkspace, newId, parseWorkspace, reorderFolder, reorderTopic, sampleWorkspace, saveWorkspace, topicDescendantIds } from '@/lib/store';
+import { canSetFolderParent, canSetTopicParent, folderDescendantIds, moveFolder, moveTopic, type Availability, type Course, type Exam, type Folder, type Material, type Note, type Topic, type Workspace, loadWorkspace, newId, parseWorkspace, reorderFolder, reorderTopic, sampleWorkspace, saveWorkspace, topicDescendantIds } from '@/lib/store';
 import { copyMaterialPath, openMaterialReference } from '@/lib/desktop';
 import { addDays, buildScheduleBlocks, courseSummaries, dateKey, daysUntil, minutesBetween, recommendations, topicSummaries } from '@/lib/planner';
 import './index.css';
@@ -226,7 +226,7 @@ function FolderRow({ folder, workspace, update, onEdit, depth = 0 }: { folder: F
   const children = workspace.folders.filter((item) => item.parentId === folder.id).sort((a, b) => a.sortOrder - b.sortOrder);
   const remove = () => {
     if (!window.confirm(`Delete ${folder.name} and its nested folders?`)) return;
-    const removed = new Set([folder.id, ...workspace.folders.filter((item) => item.parentId === folder.id).map((item) => item.id)]);
+    const removed = new Set([folder.id, ...folderDescendantIds(workspace, folder.id)]);
     update({
       ...workspace,
       folders: workspace.folders.filter((item) => !removed.has(item.id)),
@@ -245,9 +245,7 @@ function CourseModal({ item, workspace, update, onClose, onCreated }: { item: Co
 function TopicModal({ item, courseId, workspace, update, onClose }: { item: Topic | null; courseId: string; workspace: Workspace; update: (next: Workspace) => void; onClose: () => void }) {
   const [title, setTitle] = useState(item?.title ?? ''); const [minutes, setMinutes] = useState(String(item?.minutes ?? 30)); const [parentId, setParentId] = useState(item?.parentId ?? ''); const [important, setImportant] = useState(item?.important ?? false);
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (!title.trim() || !canSetTopicParent(workspace, item?.id ?? '', parentId || undefined) && item) return; const next = { id: item?.id ?? newId('topic'), courseId: item?.courseId ?? courseId, parentId: parentId || undefined, title: title.trim(), minutes: Math.min(300, Math.max(5, Number(minutes) || 30)), sortOrder: item?.sortOrder ?? Math.max(-1, ...workspace.topics.filter((topic) => topic.courseId === courseId && topic.parentId === (parentId || undefined)).map((topic) => topic.sortOrder)) + 1, lastStudied: item?.lastStudied, status: item?.status ?? 'active', important }; update({ ...workspace, topics: item ? workspace.topics.map((t) => t.id === item.id ? next : t) : [...workspace.topics, next] }); onClose(); };
-  const descendantIds = new Set<string>();
-  const collectDescendants = (id: string) => workspace.topics.filter((topic) => topic.parentId === id).forEach((topic) => { descendantIds.add(topic.id); collectDescendants(topic.id); });
-  if (item) collectDescendants(item.id);
+  const descendantIds = new Set(item ? topicDescendantIds(workspace, item.id) : []);
   const parents = workspace.topics.filter((topic) => topic.courseId === courseId && topic.id !== item?.id && !descendantIds.has(topic.id));
   return <Modal title={item ? 'Edit topic' : 'Add a topic'} description="Topics are the units the planner can recommend." onClose={onClose}><form className="grid gap-4" onSubmit={submit}><Field label="Topic name"><TextInput autoFocus data-testid="input-topic-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Memory systems" /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Realistic length"><TextInput data-testid="input-topic-minutes" type="number" min="5" max="300" value={minutes} onChange={(e) => setMinutes(e.target.value)} /></Field><Field label="Nested under"><select value={parentId} onChange={(e) => setParentId(e.target.value)} data-testid="select-topic-parent" className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary"><option value="">Top-level topic</option>{parents.map((parent) => <option key={parent.id} value={parent.id}>{parent.title}</option>)}</select></Field></div><label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 text-sm"><input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} data-testid="checkbox-topic-important" className="size-4 accent-[hsl(var(--primary))]" /><span><span className="block font-semibold">Mark as important</span><span className="text-xs text-muted-foreground">Important topics get a small priority lift, never a replacement for exam urgency.</span></span></label><div className="flex justify-end gap-2 pt-2"><Button type="button" variant="ghost" onClick={onClose} data-testid="button-cancel-topic">Cancel</Button><Button type="submit" data-testid="button-save-topic"><Check size={16} />Save topic</Button></div></form></Modal>;
 }
@@ -255,11 +253,12 @@ function FolderModal({ item, courseId, workspace, update, onClose }: { item: Fol
   const [name, setName] = useState(item?.name ?? '');
   const [parentId, setParentId] = useState(item?.parentId ?? '');
   const [topicId, setTopicId] = useState(item?.topicId ?? '');
-  const descendants = new Set(item ? [item.id, ...workspace.folders.filter((folder) => folder.parentId === item.id).map((folder) => folder.id)] : []);
+  const descendants = new Set(item ? [item.id, ...folderDescendantIds(workspace, item.id)] : []);
   const parents = workspace.folders.filter((folder) => folder.courseId === courseId && !descendants.has(folder.id));
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (item && !canSetFolderParent(workspace, item.id, parentId || undefined)) return;
     const next = { id: item?.id ?? newId('folder'), courseId: item?.courseId ?? courseId, parentId: parentId || undefined, topicId: topicId || undefined, name: name.trim(), sortOrder: item?.sortOrder ?? Math.max(-1, ...workspace.folders.filter((folder) => folder.courseId === courseId && folder.parentId === (parentId || undefined)).map((folder) => folder.sortOrder)) + 1 };
     update({ ...workspace, folders: item ? workspace.folders.map((folder) => folder.id === item.id ? next : folder) : [...workspace.folders, next] });
     onClose();

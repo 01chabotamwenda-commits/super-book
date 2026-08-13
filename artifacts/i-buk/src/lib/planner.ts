@@ -102,7 +102,7 @@ export const recommendations = (workspace: Workspace, dayOffset: number, referen
       const freshness = summary?.lastStudied ? Math.min(20, stale * 1.5) : 22;
       const balance = Math.min(10, (recentMinutesByCourse.get(topic.courseId) ?? 0) / 30);
       const score = urgency + freshness + (topic.important ? 8 : 0) - balance - Math.max(0, topic.minutes - capacity) * 0.25;
-      const examReason = rawDue < 0 ? `${exam!.title} ${Math.abs(rawDue)} days overdue` : rawDue === 0 ? `${exam!.title} today` : `${exam!.title} in ${rawDue} days`;
+       const examReason = exam ? (rawDue < 0 ? `${exam.title} ${Math.abs(rawDue)} days overdue` : rawDue === 0 ? `${exam.title} today` : `${exam.title} in ${rawDue} days`) : '';
       const reason = exam && rawDue < 14 ? examReason : summary?.lastStudied ? `last studied ${Math.max(1, stale)} days ago` : 'not studied yet';
       return { topic, course, reason, score };
     })

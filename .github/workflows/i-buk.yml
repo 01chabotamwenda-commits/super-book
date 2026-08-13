@@ -24,5 +24,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck i-Buk
         run: pnpm --filter @workspace/i-buk run typecheck
+      - name: Test local domain logic
+        run: pnpm --filter @workspace/i-buk run test
       - name: Build i-Buk preview
         run: PORT=4173 BASE_PATH=/ pnpm --filter @workspace/i-buk run build
