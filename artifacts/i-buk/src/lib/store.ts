@@ -1,28 +1,85 @@
+export const CURRENT_WORKSPACE_VERSION = 2;
+
 export type Course = { id: string; code: string; name: string; color: string };
 export type Topic = {
-  id: string; courseId: string; parentId?: string; title: string; minutes: number;
-  lastStudied?: string; status: 'active' | 'done'; important: boolean;
+  id: string;
+  courseId: string;
+  parentId?: string;
+  title: string;
+  minutes: number;
+  sortOrder: number;
+  lastStudied?: string;
+  status: 'active' | 'done';
+  important: boolean;
 };
-export type Material = { id: string; courseId: string; topicId?: string; title: string; kind: 'file' | 'link'; reference: string };
+export type Folder = {
+  id: string;
+  courseId: string;
+  parentId?: string;
+  topicId?: string;
+  name: string;
+  sortOrder: number;
+};
+export type Material = {
+  id: string;
+  courseId: string;
+  topicId?: string;
+  folderId?: string;
+  title: string;
+  kind: 'file' | 'link';
+  reference: string;
+};
 export type Exam = { id: string; courseId: string; title: string; date: string; time?: string; complete: boolean };
-export type Session = { id: string; topicId: string; date: string; minutes: number; note?: string };
-export type Note = { id: string; title: string; body: string; reminder?: string; courseId?: string; topicId?: string; pinned: boolean; updatedAt: string };
+export type Session = {
+  id: string;
+  courseId: string;
+  topicId: string;
+  date: string;
+  minutes: number;
+  durationMinutes: number;
+  startedAt: string;
+  endedAt?: string;
+  source: 'manual' | 'quick-log';
+  note?: string;
+};
+export type Note = {
+  id: string;
+  title: string;
+  body: string;
+  reminder?: string;
+  courseId?: string;
+  topicId?: string;
+  folderId?: string;
+  pinned: boolean;
+  updatedAt: string;
+};
 export type Availability = { days: number[]; start: string; end: string; dailyMinutes: number };
 export type Workspace = {
-  version: number; profile: { name: string };
-  courses: Course[]; topics: Topic[]; materials: Material[]; exams: Exam[]; sessions: Session[]; notes: Note[];
+  version: number;
+  profile: { name: string };
+  courses: Course[];
+  topics: Topic[];
+  folders: Folder[];
+  materials: Material[];
+  exams: Exam[];
+  sessions: Session[];
+  notes: Note[];
   availability: Availability;
 };
 
 const key = 'ibuk-workspace-v1';
 const isoDay = (offset: number) => {
-  const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + offset);
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + offset);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 const id = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const atNoon = (date: string) => `${date}T12:00:00`;
+const atEnd = (date: string, minutes: number) => new Date(new Date(atNoon(date)).getTime() + minutes * 60000).toISOString();
 
 export const sampleWorkspace = (): Workspace => ({
-  version: 1,
+  version: CURRENT_WORKSPACE_VERSION,
   profile: { name: 'Mara' },
   courses: [
     { id: 'course-cog', code: 'PSY 204', name: 'Cognitive Psychology', color: '#d5835d' },
@@ -30,15 +87,18 @@ export const sampleWorkspace = (): Workspace => ({
     { id: 'course-neuro', code: 'BIO 118', name: 'Foundations of Neuroscience', color: '#b99352' },
   ],
   topics: [
-    { id: 'topic-memory', courseId: 'course-cog', title: 'Memory systems', minutes: 45, lastStudied: isoDay(-5), status: 'active', important: true },
-    { id: 'topic-attention', courseId: 'course-cog', title: 'Attention & perception', minutes: 35, lastStudied: isoDay(-2), status: 'active', important: true },
-    { id: 'topic-research', courseId: 'course-cog', parentId: 'topic-memory', title: 'Research methods', minutes: 30, status: 'active', important: false },
-    { id: 'topic-regression', courseId: 'course-stat', title: 'Linear regression', minutes: 50, lastStudied: isoDay(-10), status: 'active', important: true },
-    { id: 'topic-probability', courseId: 'course-stat', title: 'Probability foundations', minutes: 40, lastStudied: isoDay(-3), status: 'active', important: false },
-    { id: 'topic-neurons', courseId: 'course-neuro', title: 'Neural signalling', minutes: 45, status: 'active', important: true },
+    { id: 'topic-memory', courseId: 'course-cog', title: 'Memory systems', minutes: 45, sortOrder: 0, lastStudied: isoDay(-5), status: 'active', important: true },
+    { id: 'topic-attention', courseId: 'course-cog', title: 'Attention & perception', minutes: 35, sortOrder: 1, lastStudied: isoDay(-2), status: 'active', important: true },
+    { id: 'topic-research', courseId: 'course-cog', parentId: 'topic-memory', title: 'Research methods', minutes: 30, sortOrder: 0, status: 'active', important: false },
+    { id: 'topic-regression', courseId: 'course-stat', title: 'Linear regression', minutes: 50, sortOrder: 0, lastStudied: isoDay(-10), status: 'active', important: true },
+    { id: 'topic-probability', courseId: 'course-stat', title: 'Probability foundations', minutes: 40, sortOrder: 1, lastStudied: isoDay(-3), status: 'active', important: false },
+    { id: 'topic-neurons', courseId: 'course-neuro', title: 'Neural signalling', minutes: 45, sortOrder: 0, status: 'active', important: true },
+  ],
+  folders: [
+    { id: 'folder-lectures', courseId: 'course-cog', name: 'Lecture notes', sortOrder: 0 },
   ],
   materials: [
-    { id: 'mat-memory', courseId: 'course-cog', topicId: 'topic-memory', title: 'Memory systems — lecture notes', kind: 'file', reference: '~/Documents/uni/psy204/memory-notes.pdf' },
+    { id: 'mat-memory', courseId: 'course-cog', topicId: 'topic-memory', folderId: 'folder-lectures', title: 'Memory systems — lecture notes', kind: 'file', reference: '~/Documents/uni/psy204/memory-notes.pdf' },
     { id: 'mat-regression', courseId: 'course-stat', topicId: 'topic-regression', title: 'Week 7 reading', kind: 'link', reference: 'https://openstax.org/details/books/introductory-statistics' },
   ],
   exams: [
@@ -47,10 +107,10 @@ export const sampleWorkspace = (): Workspace => ({
     { id: 'exam-neuro', courseId: 'course-neuro', title: 'Neuroscience final', date: isoDay(26), complete: false },
   ],
   sessions: [
-    { id: 'session-1', topicId: 'topic-memory', date: isoDay(-5), minutes: 42, note: 'Encoding and retrieval cues' },
-    { id: 'session-2', topicId: 'topic-attention', date: isoDay(-2), minutes: 30 },
-    { id: 'session-3', topicId: 'topic-probability', date: isoDay(-3), minutes: 38 },
-    { id: 'session-4', topicId: 'topic-regression', date: isoDay(-10), minutes: 46 },
+    { id: 'session-1', courseId: 'course-cog', topicId: 'topic-memory', date: isoDay(-5), minutes: 42, durationMinutes: 42, startedAt: atNoon(isoDay(-5)), endedAt: atEnd(isoDay(-5), 42), source: 'manual', note: 'Encoding and retrieval cues' },
+    { id: 'session-2', courseId: 'course-cog', topicId: 'topic-attention', date: isoDay(-2), minutes: 30, durationMinutes: 30, startedAt: atNoon(isoDay(-2)), endedAt: atEnd(isoDay(-2), 30), source: 'manual' },
+    { id: 'session-3', courseId: 'course-stat', topicId: 'topic-probability', date: isoDay(-3), minutes: 38, durationMinutes: 38, startedAt: atNoon(isoDay(-3)), endedAt: atEnd(isoDay(-3), 38), source: 'manual' },
+    { id: 'session-4', courseId: 'course-stat', topicId: 'topic-regression', date: isoDay(-10), minutes: 46, durationMinutes: 46, startedAt: atNoon(isoDay(-10)), endedAt: atEnd(isoDay(-10), 46), source: 'manual' },
   ],
   notes: [
     { id: 'note-1', title: 'Ask about the Stroop replication', body: 'Bring the question about response inhibition to Thursday’s seminar.', reminder: isoDay(2), pinned: true, updatedAt: new Date().toISOString() },
@@ -62,57 +122,177 @@ export const sampleWorkspace = (): Workspace => ({
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isFinitePositive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
+const isValidTime = (value: unknown) => isString(value) && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+const timeMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+
+const normalizeSession = (value: unknown, topics: Topic[]): Session | null => {
+  if (!isRecord(value) || !isString(value.id) || !isString(value.topicId) || !isString(value.date) || !isFinitePositive(value.minutes)) return null;
+  const topic = topics.find((item) => item.id === value.topicId);
+  if (!topic) return null;
+  const durationMinutes = isFinitePositive(value.durationMinutes) ? value.durationMinutes : value.minutes;
+  const startedAt = isString(value.startedAt) ? value.startedAt : atNoon(value.date);
+  return {
+    id: value.id,
+    courseId: isString(value.courseId) ? value.courseId : topic.courseId,
+    topicId: value.topicId,
+    date: value.date,
+    minutes: Math.round(value.minutes),
+    durationMinutes: Math.round(durationMinutes),
+    startedAt,
+    endedAt: isString(value.endedAt) ? value.endedAt : atEnd(value.date, Math.round(durationMinutes)),
+    source: value.source === 'quick-log' ? 'quick-log' : 'manual',
+    note: isString(value.note) ? value.note : undefined,
+  };
+};
 
 export const parseWorkspace = (value: unknown): Workspace | null => {
   if (!isRecord(value) || !Array.isArray(value.courses) || !Array.isArray(value.topics) || !Array.isArray(value.exams)) return null;
   const courses = value.courses;
-  const topics = value.topics;
+  const rawTopics = value.topics;
   const exams = value.exams;
   if (!courses.every((item) => isRecord(item) && isString(item.id) && isString(item.code) && isString(item.name) && isString(item.color))) return null;
-  if (!topics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isString(item.lastStudied)))) return null;
+  if (!rawTopics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isString(item.lastStudied)))) return null;
   if (!exams.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isString(item.date) && typeof item.complete === 'boolean' && (item.time === undefined || isString(item.time)))) return null;
 
-  const materials = value.materials ?? [];
-  const sessions = value.sessions ?? [];
-  const notes = value.notes ?? [];
+  const topics = rawTopics.map((item, index) => ({
+    id: item.id as string,
+    courseId: item.courseId as string,
+    parentId: isString(item.parentId) ? item.parentId : undefined,
+    title: item.title as string,
+    minutes: Math.round(item.minutes as number),
+    sortOrder: typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder) ? item.sortOrder : index,
+    lastStudied: isString(item.lastStudied) ? item.lastStudied : undefined,
+    status: item.status as Topic['status'],
+    important: item.important as boolean,
+  }));
+  const rawFolders = Array.isArray(value.folders) ? value.folders : [];
+  if (!rawFolders.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.name) && (item.parentId === undefined || isString(item.parentId)) && (item.topicId === undefined || isString(item.topicId)))) return null;
+  const folders = rawFolders.map((item, index) => ({
+    id: item.id as string,
+    courseId: item.courseId as string,
+    parentId: isString(item.parentId) ? item.parentId : undefined,
+    topicId: isString(item.topicId) ? item.topicId : undefined,
+    name: item.name as string,
+    sortOrder: typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder) ? item.sortOrder : index,
+  }));
+  const rawMaterials = Array.isArray(value.materials) ? value.materials : [];
+  const rawNotes = Array.isArray(value.notes) ? value.notes : [];
   const profile = value.profile;
   const availability = value.availability;
-  if (!Array.isArray(materials) || !materials.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && (item.kind === 'file' || item.kind === 'link') && isString(item.reference) && (item.topicId === undefined || isString(item.topicId)))) return null;
-  if (!Array.isArray(sessions) || !sessions.every((item) => isRecord(item) && isString(item.id) && isString(item.topicId) && isString(item.date) && isFinitePositive(item.minutes) && (item.note === undefined || isString(item.note)))) return null;
-  if (!Array.isArray(notes) || !notes.every((item) => isRecord(item) && isString(item.id) && isString(item.title) && isString(item.body) && typeof item.pinned === 'boolean' && isString(item.updatedAt) && (item.reminder === undefined || isString(item.reminder)) && (item.courseId === undefined || isString(item.courseId)) && (item.topicId === undefined || isString(item.topicId)))) return null;
-  if (!isRecord(profile) || !isString(profile.name) || !isRecord(availability) || !Array.isArray(availability.days) || !availability.days.every((day) => typeof day === 'number' && Number.isInteger(day) && day >= 0 && day <= 6) || !isString(availability.start) || !isString(availability.end) || !isFinitePositive(availability.dailyMinutes)) return null;
+  if (!rawMaterials.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && (item.kind === 'file' || item.kind === 'link') && isString(item.reference) && (item.topicId === undefined || isString(item.topicId)) && (item.folderId === undefined || isString(item.folderId)))) return null;
+  if (!rawNotes.every((item) => isRecord(item) && isString(item.id) && isString(item.title) && isString(item.body) && typeof item.pinned === 'boolean' && isString(item.updatedAt) && (item.reminder === undefined || isString(item.reminder)) && (item.courseId === undefined || isString(item.courseId)) && (item.topicId === undefined || isString(item.topicId)) && (item.folderId === undefined || isString(item.folderId)))) return null;
+  if (!isRecord(profile) || !isString(profile.name) || !isRecord(availability) || !Array.isArray(availability.days) || !availability.days.every((day) => typeof day === 'number' && Number.isInteger(day) && day >= 0 && day <= 6) || !isValidTime(availability.start) || !isValidTime(availability.end) || timeMinutes(availability.end as string) <= timeMinutes(availability.start as string) || !isFinitePositive(availability.dailyMinutes)) return null;
+  const sessions = Array.isArray(value.sessions) ? value.sessions.map((item) => normalizeSession(item, topics)).filter((item): item is Session => item !== null) : [];
+  if (Array.isArray(value.sessions) && sessions.length !== value.sessions.length) return null;
 
   return {
-    version: 1,
+    version: CURRENT_WORKSPACE_VERSION,
     profile: { name: profile.name },
     courses: courses as Course[],
-    topics: topics as Topic[],
-    materials: materials as Material[],
+    topics,
+    folders,
+    materials: rawMaterials as Material[],
     exams: exams as Exam[],
-    sessions: sessions as Session[],
-    notes: notes as Note[],
+    sessions,
+    notes: rawNotes as Note[],
     availability: {
       days: availability.days as number[],
-      start: availability.start,
-      end: availability.end,
-      dailyMinutes: availability.dailyMinutes,
+      start: availability.start as string,
+      end: availability.end as string,
+      dailyMinutes: Math.round(availability.dailyMinutes as number),
     },
   };
 };
 
 export const loadWorkspace = (): Workspace => {
+  if (typeof localStorage === 'undefined') return sampleWorkspace();
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = parseWorkspace(JSON.parse(raw));
-      if (parsed) return parsed;
+      if (parsed) {
+        if (JSON.parse(raw).version !== CURRENT_WORKSPACE_VERSION) saveWorkspace(parsed);
+        return parsed;
+      }
     }
   } catch { /* a fresh workspace is a safe fallback */ }
   const fresh = sampleWorkspace();
-  localStorage.setItem(key, JSON.stringify(fresh));
+  saveWorkspace(fresh);
   return fresh;
 };
 
-export const saveWorkspace = (workspace: Workspace) => localStorage.setItem(key, JSON.stringify(workspace));
+export const saveWorkspace = (workspace: Workspace) => {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(key, JSON.stringify({ ...workspace, version: CURRENT_WORKSPACE_VERSION }));
+};
 export const newId = id;
 export const storageKey = key;
+
+export const topicDescendantIds = (workspace: Workspace, rootId: string): string[] => {
+  const children = workspace.topics.filter((topic) => topic.parentId === rootId);
+  return children.flatMap((child) => [child.id, ...topicDescendantIds(workspace, child.id)]);
+};
+
+export const canSetTopicParent = (workspace: Workspace, topicId: string, parentId?: string) => {
+  if (!parentId) return true;
+  const topic = workspace.topics.find((item) => item.id === topicId);
+  const parent = workspace.topics.find((item) => item.id === parentId);
+  return Boolean(topic && parent && topic.courseId === parent.courseId && parent.id !== topicId && !topicDescendantIds(workspace, topicId).includes(parent.id));
+};
+
+export const moveTopic = (workspace: Workspace, topicId: string, parentId?: string): Workspace | null => {
+  if (!canSetTopicParent(workspace, topicId, parentId)) return null;
+  const topic = workspace.topics.find((item) => item.id === topicId);
+  if (!topic) return null;
+  const siblings = workspace.topics.filter((item) => item.courseId === topic.courseId && item.parentId === parentId && item.id !== topicId);
+  const sortOrder = siblings.length ? Math.max(...siblings.map((item) => item.sortOrder)) + 1 : 0;
+  return { ...workspace, topics: workspace.topics.map((item) => item.id === topicId ? { ...item, parentId, sortOrder } : item) };
+};
+
+export const reorderTopic = (workspace: Workspace, topicId: string, direction: -1 | 1): Workspace => {
+  const topic = workspace.topics.find((item) => item.id === topicId);
+  if (!topic) return workspace;
+  const siblings = workspace.topics.filter((item) => item.courseId === topic.courseId && item.parentId === topic.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  const index = siblings.findIndex((item) => item.id === topicId);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= siblings.length) return workspace;
+  const next = siblings[nextIndex];
+  return {
+    ...workspace,
+    topics: workspace.topics.map((item) => item.id === topic.id ? { ...item, sortOrder: next.sortOrder } : item.id === next.id ? { ...item, sortOrder: topic.sortOrder } : item),
+  };
+};
+
+export const folderDescendantIds = (workspace: Workspace, rootId: string): string[] => {
+  const children = workspace.folders.filter((folder) => folder.parentId === rootId);
+  return children.flatMap((child) => [child.id, ...folderDescendantIds(workspace, child.id)]);
+};
+
+export const canSetFolderParent = (workspace: Workspace, folderId: string, parentId?: string) => {
+  if (!parentId) return true;
+  const folder = workspace.folders.find((item) => item.id === folderId);
+  const parent = workspace.folders.find((item) => item.id === parentId);
+  return Boolean(folder && parent && folder.courseId === parent.courseId && folder.id !== parentId && !folderDescendantIds(workspace, folderId).includes(parent.id));
+};
+
+export const moveFolder = (workspace: Workspace, folderId: string, parentId?: string): Workspace | null => {
+  if (!canSetFolderParent(workspace, folderId, parentId)) return null;
+  const folder = workspace.folders.find((item) => item.id === folderId);
+  if (!folder) return null;
+  const siblings = workspace.folders.filter((item) => item.courseId === folder.courseId && item.parentId === parentId && item.id !== folderId);
+  const sortOrder = siblings.length ? Math.max(...siblings.map((item) => item.sortOrder)) + 1 : 0;
+  return { ...workspace, folders: workspace.folders.map((item) => item.id === folderId ? { ...item, parentId, sortOrder } : item) };
+};
+
+export const reorderFolder = (workspace: Workspace, folderId: string, direction: -1 | 1): Workspace => {
+  const folder = workspace.folders.find((item) => item.id === folderId);
+  if (!folder) return workspace;
+  const siblings = workspace.folders.filter((item) => item.courseId === folder.courseId && item.parentId === folder.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  const index = siblings.findIndex((item) => item.id === folderId);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= siblings.length) return workspace;
+  const next = siblings[nextIndex];
+  return {
+    ...workspace,
+    folders: workspace.folders.map((item) => item.id === folder.id ? { ...item, sortOrder: next.sortOrder } : item.id === next.id ? { ...item, sortOrder: folder.sortOrder } : item),
+  };
+};
