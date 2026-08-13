@@ -28,7 +28,10 @@ i-Buk is a local-first study workspace for organizing courses and local material
 - `artifacts/i-buk/src/lib/store.ts` — local workspace types, starter data, and localStorage persistence.
 - `artifacts/i-buk/src/lib/desktop.ts` — narrow desktop bridge seam for opening local references without putting filesystem access in the UI.
 - `artifacts/i-buk/src/index.css` — i-Buk visual language and responsive shell styling.
+- `desktop/` — Windows Electron shell, secure preload bridge, renderer packaging, and installer configuration.
 - `.github/workflows/i-buk.yml` — GitHub Actions install, typecheck, and preview build checks.
+- `.github/workflows/build-desktop.yml` — Windows x64 Electron installer workflow.
+- `docs/i-buk-implementation-status.md` — canonical playbook comparison and remaining-work backlog.
 
 ## Architecture decisions
 

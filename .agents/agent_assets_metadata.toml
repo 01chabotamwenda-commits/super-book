@@ -14,3 +14,10 @@ uri = "file://attached_assets/i-Buk_Implementation_Gap_Analysis_Updated.docx"
 type = "word_document"
 title = "i-Buk Implementation Gap Analysis — Updated"
 description = "Updated status report marking the browser milestone completed, documenting verified checks, and listing the remaining Electron, filesystem, notifications, integrations, testing, and packaging work. The original analysis is preserved inside the document as a historical baseline."
+
+[[outputs]]
+id = "BcxDag077-GzjW0Gr29fP"
+uri = "file://docs/i-buk-implementation-status.md"
+type = "text"
+title = "i-Buk Implementation Status"
+description = "Canonical Markdown comparison of the current implementation against the i-Buk development playbook, including completed features, remaining work, deferred integrations, and release checks."
