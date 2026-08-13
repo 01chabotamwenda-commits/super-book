@@ -30,7 +30,7 @@ function Button({ children, className = '', variant = 'primary', ...props }: Rea
     ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground',
     danger: 'text-destructive hover:bg-destructive/10',
   };
-  return <button {...props} className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]} ${className}`} />;
+  return <button {...props} className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]} ${className}`}>{children}</button>;
 }
 function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone?: 'default' | 'warm' | 'green' | 'muted' }) {
   const tones = { default: 'bg-accent/15 text-accent-foreground', warm: 'bg-[#f3dfc1] text-[#76522d]', green: 'bg-primary/10 text-primary', muted: 'bg-muted text-muted-foreground' };
