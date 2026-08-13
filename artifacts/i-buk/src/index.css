@@ -83,6 +83,34 @@ button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 ::selection { background: hsl(var(--accent) / .28); }
 
+/* Keep browser-owned scrollbars as intentional as the rest of the interface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / .38) hsl(var(--background) / .68);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background) / .68);
+  border-left: 1px solid hsl(var(--border) / .38);
+}
+*::-webkit-scrollbar-thumb {
+  min-height: 28px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: hsl(var(--primary) / .38);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent));
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: hsl(var(--background));
+}
+
 .paper-grain::before {
   content: '';
   position: fixed;
