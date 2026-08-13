@@ -13,7 +13,7 @@ The largest remaining gap is not the React experience itself. It is the desktop 
 1. Finish the Electron filesystem features: choose, inspect, relink, and preview local references.
 2. Add restart-safe Windows notifications for note reminders.
 3. Decide whether desktop persistence should remain renderer-local or move to a main-process-owned store.
-4. Add renderer/Electron reliability coverage and run the Windows installer workflow.
+4. Add renderer/Electron reliability coverage and manually verify the uploaded Windows installer on Windows 11.
 5. Implement the optional Gemini server route and UI only if the AI explanation feature is still wanted.
 6. Complete Supabase authentication, migration execution, and multi-device conflict behavior if cloud sync is required.
 
@@ -43,7 +43,7 @@ The product remains intentionally local-first. Study-file bytes must never be up
 | Stages 13–14: Supabase and sync | Partial | `@supabase/supabase-js`, a local-to-cloud workspace snapshot sync seam, a migration, user-scoped RLS policies, and graceful local fallback exist. Only structured JSON metadata is synchronized. | Apply/verify migrations, add authentication/session UX, define offline conflict rules, and test multi-device reconciliation. |
 | Stage 15: desktop experience | Partial | Windows Electron shell has context isolation, `nodeIntegration=false`, sandboxing, external-link handling, OS path opening, local renderer packaging, NSIS configuration, and shortcuts. | Complete desktop-only reference states, media handling, notifications, and durable desktop persistence decisions. |
 | Stage 16: testing and reliability | Partial | Store/planner domain tests pass; typecheck, production build, and Replit preview checks pass. | Add renderer/component tests, Electron IPC tests, restart/offline/malformed-data scenarios, missing-file tests, and failure-mode coverage. |
-| Stage 17: GitHub/release automation | Implemented / Partial | `.github/workflows/i-buk.yml` runs workspace checks; `.github/workflows/build-desktop.yml` builds a Windows x64 NSIS installer and uploads the `.exe`; `desktop/README.md` documents GitHub variables/secrets. | Run the Windows workflow, optionally add signing, GitHub Release publishing, and release promotion notes. |
+| Stage 17: GitHub/release automation | Implemented / Partial | `.github/workflows/i-buk.yml` runs workspace checks; `.github/workflows/build-desktop.yml` now passes on GitHub’s Windows runner, builds a Windows x64 NSIS installer, and uploads the `.exe`; `desktop/README.md` documents GitHub variables/secrets. | Manually verify the uploaded `.exe` on Windows 11; optionally add signing, GitHub Release publishing, and release promotion notes. |
 | Stage 18: final audit | In progress | This document is the current requirements audit and release backlog. | Re-run the audit after the desktop filesystem and notification milestones. |
 
 ## What is already implemented
@@ -181,9 +181,10 @@ Last verified in Replit:
 - `cd desktop && npm ci` — passed.
 - `cd desktop && npm run prepare:renderer` — passed.
 - `cd desktop && npx electron-builder --linux dir --x64` — passed as a local packaging smoke check.
+- GitHub Actions `Build Desktop App (Electron)` — passed and uploaded the Windows x64 NSIS installer.
 - Replit managed root preview — HTTP 200 through the proxied URL.
 
-The Windows NSIS target is configured but must be executed on GitHub's Windows runner. The Replit Linux host cannot finish the NSIS step because Wine is not installed; this is an environment limitation, not a Windows workflow result.
+The GitHub Windows runner successfully produced the NSIS installer. The Replit Linux host cannot finish the NSIS step because Wine is not installed; this is an environment limitation, not a Windows workflow failure. Manual installation verification on Windows 11 remains open.
 
 ## Release acceptance checklist
 
@@ -200,7 +201,8 @@ The Windows NSIS target is configured but must be executed on GitHub's Windows r
 - [ ] Reminder notifications survive application restart.
 - [ ] Desktop persistence strategy is finalized and tested.
 - [ ] Renderer and Electron reliability tests are added.
-- [ ] Windows workflow has produced and manually verified the installer.
+- [x] Windows workflow has produced the NSIS installer.
+- [ ] Uploaded Windows installer is manually verified on Windows 11.
 - [ ] Gemini route/UI is implemented, or explicitly deferred for the release.
 - [ ] Supabase auth/sync/conflict behavior is implemented, or explicitly deferred for the release.
 - [ ] Signing/release publishing decision is documented.
