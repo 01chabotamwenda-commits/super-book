@@ -3,8 +3,8 @@ name: Artifact preview routing
 description: Replit artifact and workflow port alignment constraints for proxied previews
 ---
 
-The managed workflow’s advertised port must match the artifact service’s `localPort` and environment port for the shared proxy to return the app instead of a 502.
+The managed workflow’s advertised port must match the artifact service’s `localPort` and environment port for the shared proxy to return the app instead of a 502. A freshly cloned repository may contain artifact manifests without any registered workflow entry.
 
 **Why:** The development server can be healthy on its bound port while the artifact route points at a different port, producing a misleading “couldn’t reach this app” preview.
 
-**How to apply:** When cloning or importing an artifact, compare `.replit` workflow `PORT`/`waitForPort` with the artifact service metadata. Keep only the artifact-owned workflow for a service; a legacy workflow on the same port causes the managed workflow to fail with “Port ... is already in use.” Update `.replit` only through the platform’s validated replacement flow, then restart and verify the actual proxied URL.
+**How to apply:** When cloning or importing an artifact, compare `.replit` workflow `PORT`/`waitForPort` with the artifact service metadata. Keep only the artifact-owned workflow for a service; a legacy workflow on the same port causes the managed workflow to fail with “Port ... is already in use.” If the clone has no registered workflow, use the platform’s validated workflow configuration with the artifact’s declared command and port, then restart and verify the actual proxied URL.
