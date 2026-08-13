@@ -2,15 +2,28 @@ import type { Material } from './store';
 
 type DesktopResult = { ok: boolean; message?: string };
 
+export type DesktopWindowControls = {
+  minimize: () => Promise<boolean>;
+  toggleMaximize: () => Promise<boolean>;
+  close: () => Promise<boolean>;
+  isMaximized: () => Promise<boolean>;
+  onMaximizedChange: (callback: (maximized: boolean) => void) => () => void;
+};
+
 type DesktopBridge = {
   openPath: (path: string) => Promise<DesktopResult>;
   copyPath?: (path: string) => Promise<DesktopResult>;
+  windowControls?: DesktopWindowControls;
 };
 
 const bridge = () => {
   if (typeof window === 'undefined') return undefined;
   return (window as Window & { ibukDesktop?: DesktopBridge }).ibukDesktop;
 };
+
+export function getDesktopWindowControls(): DesktopWindowControls | undefined {
+  return bridge()?.windowControls;
+}
 
 export async function openMaterialReference(material: Material): Promise<DesktopResult> {
   if (material.kind === 'link') {

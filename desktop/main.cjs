@@ -10,6 +10,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 700,
     backgroundColor: '#f7f5ef',
+    frame: false,
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -37,8 +38,32 @@ function createWindow() {
     }
   });
 
+  window.on('maximize', () => window.webContents.send('ibuk:window-state', true));
+  window.on('unmaximize', () => window.webContents.send('ibuk:window-state', false));
+
   void window.loadFile(rendererEntry());
 }
+
+ipcMain.handle('ibuk:window-control', (event, action) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window) return false;
+
+  if (action === 'minimize') {
+    window.minimize();
+  } else if (action === 'toggle-maximize') {
+    if (window.isMaximized()) window.unmaximize();
+    else window.maximize();
+  } else if (action === 'close') {
+    window.close();
+  }
+
+  return window.isMaximized();
+});
+
+ipcMain.handle('ibuk:window-state', (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  return window?.isMaximized() ?? false;
+});
 
 ipcMain.handle('ibuk:open-path', async (_event, targetPath) => {
   if (typeof targetPath !== 'string' || !targetPath.trim()) {

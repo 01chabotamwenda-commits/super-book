@@ -148,3 +148,112 @@ main a {
     display: none;
   }
 }
+
+.desktop-app-shell {
+  min-height: 100dvh;
+  background: hsl(var(--background));
+}
+
+.desktop-titlebar {
+  position: relative;
+  z-index: 60;
+  display: flex;
+  height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid hsl(var(--border) / .72);
+  background:
+    linear-gradient(90deg, hsl(var(--sidebar) / .98), hsl(var(--primary) / .96) 58%, hsl(var(--primary) / .9));
+  color: hsl(var(--primary-foreground));
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.desktop-titlebar-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding-left: 16px;
+}
+
+.desktop-titlebar-mark {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid hsl(var(--sidebar-primary) / .5);
+  border-radius: 8px;
+  background: hsl(var(--sidebar-primary));
+  color: hsl(var(--sidebar-primary-foreground));
+}
+
+.desktop-titlebar-name {
+  font-family: var(--app-font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+.desktop-titlebar-divider {
+  width: 1px;
+  height: 15px;
+  background: hsl(var(--primary-foreground) / .28);
+}
+
+.desktop-titlebar-context {
+  overflow: hidden;
+  color: hsl(var(--primary-foreground) / .62);
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.desktop-titlebar-actions {
+  display: flex;
+  align-self: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.desktop-window-button {
+  display: grid;
+  width: 46px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  color: hsl(var(--primary-foreground) / .72);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+  -webkit-app-region: no-drag;
+}
+
+.desktop-window-button:hover,
+.desktop-window-button:focus-visible {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary-foreground) / .1);
+  outline: none;
+}
+
+.desktop-window-button-close:hover,
+.desktop-window-button-close:focus-visible {
+  background: hsl(2 70% 56% / .88);
+}
+
+.desktop-app-content {
+  min-height: calc(100dvh - 44px);
+}
+
+.desktop-app-content > .paper-grain {
+  min-height: calc(100dvh - 44px);
+}
+
+.desktop-app-content > .paper-grain > aside {
+  top: 44px;
+  bottom: 0;
+}

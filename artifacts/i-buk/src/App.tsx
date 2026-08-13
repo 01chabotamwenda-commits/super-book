@@ -5,12 +5,12 @@ import {
   ArrowDownToLine, ArrowUpFromLine, BookOpen, CalendarDays, Check, CheckCircle2,
   ChevronDown, ChevronRight, CircleHelp, Clock3, FileText, FolderOpen, GraduationCap,
   FolderPlus, ArrowDown, ArrowUp, LayoutDashboard, LibraryBig, Link2, ListPlus, Menu, Pencil, Pin,
-  Plus, RotateCcw, Search, Settings2, Sparkles, Trash2, TrendingUp, X, Zap, Copy,
+  Minus, Plus, RotateCcw, Search, Settings2, Sparkles, Trash2, TrendingUp, X, Zap, Copy, Maximize2, Minimize2,
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
 import { canSetFolderParent, canSetTopicParent, folderDescendantIds, moveFolder, moveTopic, removeFolderBranch, removeTopicBranch, type Availability, type Course, type Exam, type Folder, type Material, type Note, type Topic, type Workspace, loadWorkspace, newId, parseWorkspace, reorderFolder, reorderTopic, sampleWorkspace, saveWorkspace, topicDescendantIds } from '@/lib/store';
-import { copyMaterialPath, openMaterialReference } from '@/lib/desktop';
+import { copyMaterialPath, getDesktopWindowControls, openMaterialReference, type DesktopWindowControls } from '@/lib/desktop';
 import { addDays, buildScheduleBlocks, courseSummaries, daysUntil, minutesBetween, neglectedTopics, recommendations, topicSummaries } from '@/lib/planner';
 import { DEFAULT_WORKSPACE_ID, getDeviceId, syncWorkspaceSnapshot } from '@/lib/sync';
 import { APP_TIME_ZONE, dateKey, formatFocusTiming, greetingFor, minutesUntil } from '@/lib/time';
@@ -51,6 +51,49 @@ function Modal({ title, description, onClose, children }: { title: string; descr
       <div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="font-serif text-2xl text-foreground">{title}</h2>{description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}</div><Button variant="ghost" className="p-2" onClick={onClose} aria-label="Close dialog" data-testid="button-close-dialog"><X size={18} /></Button></div>
       {children}
     </div>
+  </div>;
+}
+
+function DesktopChrome({ children }: { children: React.ReactNode }) {
+  const [controls] = useState<DesktopWindowControls | undefined>(() => getDesktopWindowControls());
+  const [maximized, setMaximized] = useState(false);
+
+  useEffect(() => {
+    if (!controls) return;
+    let active = true;
+    void controls.isMaximized().then((value) => {
+      if (active) setMaximized(value);
+    });
+    const removeListener = controls.onMaximizedChange(setMaximized);
+    return () => {
+      active = false;
+      removeListener();
+    };
+  }, [controls]);
+
+  if (!controls) return <>{children}</>;
+
+  return <div className="desktop-app-shell">
+    <header className="desktop-titlebar" onDoubleClick={() => { void controls.toggleMaximize(); }}>
+      <div className="desktop-titlebar-brand">
+        <span className="desktop-titlebar-mark"><BookOpen size={15} strokeWidth={2.6} /></span>
+        <span className="desktop-titlebar-name">i-Buk</span>
+        <span className="desktop-titlebar-divider" />
+        <span className="desktop-titlebar-context">Study planner</span>
+      </div>
+      <div className="desktop-titlebar-actions">
+        <button className="desktop-window-button" type="button" onClick={(event) => { event.stopPropagation(); void controls.minimize(); }} aria-label="Minimize i-Buk" title="Minimize">
+          <Minus size={15} />
+        </button>
+        <button className="desktop-window-button" type="button" onClick={(event) => { event.stopPropagation(); void controls.toggleMaximize(); }} aria-label={maximized ? 'Restore i-Buk window' : 'Maximize i-Buk'} title={maximized ? 'Restore' : 'Maximize'}>
+          {maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+        </button>
+        <button className="desktop-window-button desktop-window-button-close" type="button" onClick={(event) => { event.stopPropagation(); void controls.close(); }} aria-label="Close i-Buk" title="Close">
+          <X size={14} />
+        </button>
+      </div>
+    </header>
+    <div className="desktop-app-content">{children}</div>
   </div>;
 }
 function EmptyState({ icon: Icon, title, copy, action }: { icon: typeof Archive; title: string; copy: string; action?: React.ReactNode }) {
@@ -436,5 +479,5 @@ function AppContent() {
   };
   return <Shell workspace={workspace}><Switch><Route path="/"><HomePage workspace={workspace} update={update} /></Route><Route path="/workspace"><WorkspacePage workspace={workspace} /></Route><Route path="/library"><LibraryPage workspace={workspace} update={update} /></Route><Route path="/schedule"><SchedulePage workspace={workspace} update={update} /></Route><Route path="/notes"><NotesPage workspace={workspace} update={update} /></Route><Route path="/stats"><StatsPage workspace={workspace} /></Route><Route path="/settings"><SettingsPage workspace={workspace} update={update} /></Route><Route component={NotFound} /></Switch></Shell>;
 }
-function App() { return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><ErrorBoundary resetKey={window.location.pathname}><AppContent /></ErrorBoundary></WouterRouter>; }
+function App() { return <DesktopChrome><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><ErrorBoundary resetKey={window.location.pathname}><AppContent /></ErrorBoundary></WouterRouter></DesktopChrome>; }
 export default App;
