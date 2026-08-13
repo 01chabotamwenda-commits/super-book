@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildScheduleBlocks, courseSummaries, recommendations, topicSummaries } from './planner.ts';
+import { buildScheduleBlocks, courseSummaries, neglectedTopics, recommendations, topicSummaries } from './planner.ts';
 import { sampleWorkspace } from './store.ts';
 
 test('study summaries aggregate repeated events by topic and course', () => {
@@ -24,6 +24,22 @@ test('study summaries aggregate repeated events by topic and course', () => {
   assert.equal(topic?.lastStudied, '2026-08-12');
   assert.equal(course?.totalMinutes, 92);
   assert.equal(course?.topicsStudied, 2);
+});
+
+test('topic summaries use recorded session history instead of stale topic metadata', () => {
+  const workspace = sampleWorkspace();
+  workspace.topics = workspace.topics.map((topic) => topic.id === 'topic-memory' ? { ...topic, lastStudied: '2099-01-01' } : topic);
+  const summary = topicSummaries(workspace).find((item) => item.topicId === 'topic-memory');
+  assert.equal(summary?.lastStudied, '2026-08-08');
+});
+
+test('neglected topics prioritize never-studied and oldest active topics', () => {
+  const workspace = sampleWorkspace();
+  const neglected = neglectedTopics(workspace, '2026-08-13');
+  assert.equal(neglected[0]?.topic.id, 'topic-research');
+  assert.equal(neglected[0]?.reason, 'not studied yet');
+  assert.ok(neglected.find((item) => item.topic.id === 'topic-regression')?.daysSinceStudied === 10);
+  assert.equal(neglected.some((item) => item.topic.status === 'done'), false);
 });
 
 test('completed exams no longer add urgency to recommendations', () => {

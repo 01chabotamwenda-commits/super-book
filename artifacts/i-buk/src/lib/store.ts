@@ -149,17 +149,18 @@ const normalizeSession = (value: unknown, topics: Topic[]): Session | null => {
   if (!isRecord(value) || !isString(value.id) || !isString(value.topicId) || !isValidDate(value.date) || !isFinitePositive(value.minutes)) return null;
   const topic = topics.find((item) => item.id === value.topicId);
   if (!topic) return null;
+  const date = value.date as string;
   const durationMinutes = isFinitePositive(value.durationMinutes) ? value.durationMinutes : value.minutes;
-  const startedAt = isString(value.startedAt) ? value.startedAt : atNoon(value.date);
+  const startedAt = isString(value.startedAt) ? value.startedAt : atNoon(date);
   return {
     id: value.id,
-    courseId: isString(value.courseId) ? value.courseId : topic.courseId,
+    courseId: topic.courseId,
     topicId: value.topicId,
-    date: value.date,
+    date,
     minutes: Math.round(value.minutes),
     durationMinutes: Math.round(durationMinutes),
     startedAt,
-    endedAt: isString(value.endedAt) ? value.endedAt : atEnd(value.date, Math.round(durationMinutes)),
+    endedAt: isString(value.endedAt) ? value.endedAt : atEnd(date, Math.round(durationMinutes)),
     source: value.source === 'quick-log' ? 'quick-log' : 'manual',
     note: isString(value.note) ? value.note : undefined,
   };
