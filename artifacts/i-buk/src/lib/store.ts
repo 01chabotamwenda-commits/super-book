@@ -169,10 +169,11 @@ const normalizeSession = (value: unknown, topics: Topic[]): Session | null => {
 export const parseWorkspace = (value: unknown): Workspace | null => {
   if (!isRecord(value) || !Array.isArray(value.courses) || !Array.isArray(value.topics) || !Array.isArray(value.exams)) return null;
   const courses = value.courses;
+  const courseById = new Map(courses.filter(isRecord).map((item) => [item.id, item]));
   const rawTopics = value.topics;
   const exams = value.exams;
   if (!courses.every((item) => isRecord(item) && isString(item.id) && isString(item.code) && isString(item.name) && isString(item.color))) return null;
-   if (!rawTopics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isValidDate(item.lastStudied)))) return null;
+    if (!rawTopics.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && courseById.has(item.courseId) && isString(item.title) && isFinitePositive(item.minutes) && (item.status === 'active' || item.status === 'done') && typeof item.important === 'boolean' && (item.parentId === undefined || isString(item.parentId)) && (item.lastStudied === undefined || isValidDate(item.lastStudied)))) return null;
    if (!exams.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && isValidDate(item.date) && typeof item.complete === 'boolean' && (item.time === undefined || isValidTime(item.time)))) return null;
 
   const topics = rawTopics.map((item, index) => ({
@@ -199,13 +200,20 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
     sortOrder: typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder) ? item.sortOrder : index,
   }));
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
-  if (folders.some((folder) => folder.parentId && (!folderById.has(folder.parentId) || folderById.get(folder.parentId)?.courseId !== folder.courseId)) || hasParentCycle(folders)) return null;
+  if (folders.some((folder) => folder.parentId && (!folderById.has(folder.parentId) || folderById.get(folder.parentId)?.courseId !== folder.courseId)) || folders.some((folder) => folder.topicId && (!topicById.has(folder.topicId) || topicById.get(folder.topicId)?.courseId !== folder.courseId)) || hasParentCycle(folders)) return null;
   const rawMaterials = Array.isArray(value.materials) ? value.materials : [];
   const rawNotes = Array.isArray(value.notes) ? value.notes : [];
   const profile = value.profile;
   const availability = value.availability;
-  if (!rawMaterials.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && isString(item.title) && (item.kind === 'file' || item.kind === 'link') && isString(item.reference) && (item.topicId === undefined || isString(item.topicId)) && (item.folderId === undefined || isString(item.folderId)))) return null;
-  if (!rawNotes.every((item) => isRecord(item) && isString(item.id) && isString(item.title) && isString(item.body) && typeof item.pinned === 'boolean' && isString(item.updatedAt) && (item.reminder === undefined || isString(item.reminder)) && (item.courseId === undefined || isString(item.courseId)) && (item.topicId === undefined || isString(item.topicId)) && (item.folderId === undefined || isString(item.folderId)))) return null;
+  if (!rawMaterials.every((item) => isRecord(item) && isString(item.id) && isString(item.courseId) && courseById.has(item.courseId) && isString(item.title) && (item.kind === 'file' || item.kind === 'link') && isString(item.reference) && (item.topicId === undefined || (isString(item.topicId) && topicById.get(item.topicId)?.courseId === item.courseId)) && (item.folderId === undefined || (isString(item.folderId) && folderById.get(item.folderId)?.courseId === item.courseId)))) return null;
+  if (!rawNotes.every((item) => {
+    if (!isRecord(item) || !isString(item.id) || !isString(item.title) || !isString(item.body) || typeof item.pinned !== 'boolean' || !isString(item.updatedAt) || (item.reminder !== undefined && !isString(item.reminder)) || (item.courseId !== undefined && (!isString(item.courseId) || !courseById.has(item.courseId))) || (item.topicId !== undefined && !isString(item.topicId)) || (item.folderId !== undefined && !isString(item.folderId))) return false;
+    const topic = isString(item.topicId) ? topicById.get(item.topicId) : undefined;
+    const folder = isString(item.folderId) ? folderById.get(item.folderId) : undefined;
+    const targetCourseId = isString(item.courseId) ? item.courseId : undefined;
+    return (!item.topicId || Boolean(topic && (!targetCourseId || topic.courseId === targetCourseId)))
+      && (!item.folderId || Boolean(folder && (!targetCourseId || folder.courseId === targetCourseId)));
+  })) return null;
   if (!isRecord(profile) || !isString(profile.name) || !isRecord(availability) || !Array.isArray(availability.days) || !availability.days.every((day) => typeof day === 'number' && Number.isInteger(day) && day >= 0 && day <= 6) || !isValidTime(availability.start) || !isValidTime(availability.end) || timeMinutes(availability.end as string) <= timeMinutes(availability.start as string) || !isFinitePositive(availability.dailyMinutes)) return null;
   const sessions = Array.isArray(value.sessions) ? value.sessions.map((item) => normalizeSession(item, topics)).filter((item): item is Session => item !== null) : [];
   if (Array.isArray(value.sessions) && sessions.length !== value.sessions.length) return null;
@@ -300,6 +308,18 @@ export const reorderTopic = (workspace: Workspace, topicId: string, direction: -
   };
 };
 
+export const removeTopicBranch = (workspace: Workspace, topicId: string): Workspace => {
+  const removed = new Set([topicId, ...topicDescendantIds(workspace, topicId)]);
+  return {
+    ...workspace,
+    topics: workspace.topics.filter((topic) => !removed.has(topic.id)),
+    folders: workspace.folders.map((folder) => folder.topicId && removed.has(folder.topicId) ? { ...folder, topicId: undefined } : folder),
+    materials: workspace.materials.filter((material) => !material.topicId || !removed.has(material.topicId)),
+    sessions: workspace.sessions.filter((session) => !removed.has(session.topicId)),
+    notes: workspace.notes.map((note) => note.topicId && removed.has(note.topicId) ? { ...note, topicId: undefined } : note),
+  };
+};
+
 export const folderDescendantIds = (workspace: Workspace, rootId: string): string[] => {
   const descendants: string[] = [];
   const visited = new Set([rootId]);
@@ -345,5 +365,15 @@ export const reorderFolder = (workspace: Workspace, folderId: string, direction:
   return {
     ...workspace,
     folders: workspace.folders.map((item) => item.id === folder.id ? { ...item, sortOrder: next.sortOrder } : item.id === next.id ? { ...item, sortOrder: folder.sortOrder } : item),
+  };
+};
+
+export const removeFolderBranch = (workspace: Workspace, folderId: string): Workspace => {
+  const removed = new Set([folderId, ...folderDescendantIds(workspace, folderId)]);
+  return {
+    ...workspace,
+    folders: workspace.folders.filter((folder) => !removed.has(folder.id)),
+    materials: workspace.materials.map((material) => removed.has(material.folderId ?? '') ? { ...material, folderId: undefined } : material),
+    notes: workspace.notes.map((note) => removed.has(note.folderId ?? '') ? { ...note, folderId: undefined } : note),
   };
 };
