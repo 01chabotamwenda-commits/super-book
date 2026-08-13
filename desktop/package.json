@@ -1,0 +1,50 @@
+{
+  "name": "ibuk-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "author": "i-Buk",
+  "description": "Windows 11 desktop shell for i-Buk Study Planner",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:renderer": "node prepare-renderer.mjs",
+    "start": "npm run prepare:renderer && electron .",
+    "dist:win": "npm run prepare:renderer && electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.ibuk.studyplanner",
+    "productName": "i-Buk Study Planner",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "prepare-renderer.mjs",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "i-Buk Study Planner"
+    }
+  }
+}
