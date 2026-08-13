@@ -1,0 +1,128 @@
+Windows 11 x64
+failed 18 minutes ago in 2m 2s
+Search logs
+1s
+6s
+3s
+8s
+node: v24.18.1
+npm: 11.16.0
+yarn: 1.22.22
+
+C:\Windows\system32\cmd.exe /D /S /C "C:\Users\runneradmin\setup-pnpm\node_modules\.bin\pnpm.CMD store path --silent"
+D:\.pnpm-store\v10
+pnpm cache is not found
+16s
+Run pnpm install --frozen-lockfile
+  pnpm install --frozen-lockfile
+  shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+  env:
+    PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+  
+Scope: all 9 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +481
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 481, reused 0, downloaded 52, added 12
+Progress: resolved 481, reused 0, downloaded 131, added 40
+Progress: resolved 481, reused 0, downloaded 261, added 94
+Progress: resolved 481, reused 0, downloaded 287, added 107
+Progress: resolved 481, reused 0, downloaded 289, added 109
+Progress: resolved 481, reused 0, downloaded 291, added 110
+Progress: resolved 481, reused 0, downloaded 295, added 110
+Progress: resolved 481, reused 0, downloaded 355, added 128
+Progress: resolved 481, reused 0, downloaded 404, added 147
+Progress: resolved 481, reused 0, downloaded 481, added 245
+Progress: resolved 481, reused 0, downloaded 481, added 291
+Progress: resolved 481, reused 0, downloaded 481, added 325
+Progress: resolved 481, reused 0, downloaded 481, added 436
+Progress: resolved 481, reused 0, downloaded 481, added 481, done
+.../esbuild@0.27.3/node_modules/esbuild postinstall$ node install.js
+.../esbuild@0.27.3/node_modules/esbuild postinstall: Done
+dependencies:
++ @replit/connectors-sdk 0.4.1
+devDependencies:
++ prettier 3.9.6
++ typescript 5.9.3
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+. preinstall: Done
+Done in 15s using pnpm v10.34.5
+1s
+Run pnpm --filter @workspace/api-server run build
+  
+> @workspace/api-server@0.0.0 build D:\a\super-book\super-book\artifacts\api-server
+> node ./build.mjs
+  dist\index.mjs                   1.4mb
+  dist\pino-worker.mjs           153.4kb
+  dist\pino-file.mjs             142.1kb
+  dist\pino-pretty.mjs           114.4kb
+  dist\thread-stream-worker.mjs    7.3kb
+  ...and 5 more output files...
+Done in 234ms
+6s
+Run pnpm --filter @workspace/i-buk run build
+  
+> @workspace/i-buk@0.0.0 build D:\a\super-book\super-book\artifacts\i-buk
+> vite build --config vite.config.ts
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1737 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                   1.45 kB │ gzip:   0.56 kB
+dist/public/assets/index-Dn6iUY_v.css  106.13 kB │ gzip:  18.22 kB
+dist/public/assets/index-C3EnXNo9.js   549.51 kB │ gzip: 155.70 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.95s
+1m 15s
+Run npm ci
+  
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '\\\\?\\D:\\a\\super-book\\super-book\\desktop\\node_modules',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'D:\a\super-book\super-book\desktop\node_modules\pkijs\node_modules'] {
+npm warn cleanup       errno: -4048,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: 'D:\\a\\super-book\\super-book\\desktop\\node_modules\\pkijs\\node_modules'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+npm error code ENOTFOUND
+npm error syscall getaddrinfo
+npm error errno ENOTFOUND
+npm error network request to http://package-firewall.replit.local/npm/yocto-queue/-/yocto-queue-0.1.0.tgz failed, reason: getaddrinfo ENOTFOUND package-firewall.replit.local
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: C:\npm\cache\_logs\2026-08-13T19_05_21_250Z-debug-0.log
+Error: Process completed with exit code 1.
+0s
+0s
+0s
+0s
+Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Post job cleanup.
+Pruning is unnecessary.
+2s
+Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Post job cleanup.
+"C:\Program Files\Git\bin\git.exe" version
+git version 2.55.0.windows.3
+Temporarily overriding HOME='D:\a\_temp\8a924c6e-6268-444e-8c26-48c471d3a41c' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\super-book\super-book
+"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
