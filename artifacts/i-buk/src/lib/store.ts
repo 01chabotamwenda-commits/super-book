@@ -56,6 +56,7 @@ export type Note = {
 export type Availability = { days: number[]; start: string; end: string; dailyMinutes: number };
 export type Workspace = {
   version: number;
+  updatedAt: string;
   profile: { name: string };
   courses: Course[];
   topics: Topic[];
@@ -80,6 +81,7 @@ const atEnd = (date: string, minutes: number) => new Date(new Date(atNoon(date))
 
 export const sampleWorkspace = (): Workspace => ({
   version: CURRENT_WORKSPACE_VERSION,
+  updatedAt: new Date().toISOString(),
   profile: { name: 'Mara' },
   courses: [
     { id: 'course-cog', code: 'PSY 204', name: 'Cognitive Psychology', color: '#d5835d' },
@@ -121,6 +123,7 @@ export const sampleWorkspace = (): Workspace => ({
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const isString = (value: unknown): value is string => typeof value === 'string';
+const isTimestamp = (value: unknown): value is string => isString(value) && Number.isFinite(Date.parse(value));
 const isFinitePositive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const isValidTime = (value: unknown) => isString(value) && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const isValidDate = (value: unknown) => {
@@ -220,6 +223,7 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
 
   return {
     version: CURRENT_WORKSPACE_VERSION,
+    updatedAt: isTimestamp(value.updatedAt) ? value.updatedAt : '1970-01-01T00:00:00.000Z',
     profile: { name: profile.name },
     courses: courses as Course[],
     topics,
@@ -242,9 +246,10 @@ export const loadWorkspace = (): Workspace => {
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
-      const parsed = parseWorkspace(JSON.parse(raw));
+      const rawValue = JSON.parse(raw);
+      const parsed = parseWorkspace(rawValue);
       if (parsed) {
-        if (JSON.parse(raw).version !== CURRENT_WORKSPACE_VERSION) saveWorkspace(parsed);
+        if (rawValue.version !== CURRENT_WORKSPACE_VERSION || !isTimestamp(rawValue.updatedAt)) saveWorkspace(parsed, { touch: false });
         return parsed;
       }
     }
@@ -254,8 +259,14 @@ export const loadWorkspace = (): Workspace => {
   return fresh;
 };
 
-export const saveWorkspace = (workspace: Workspace) => {
-  if (typeof localStorage !== 'undefined') localStorage.setItem(key, JSON.stringify({ ...workspace, version: CURRENT_WORKSPACE_VERSION }));
+export const saveWorkspace = (workspace: Workspace, options: { touch?: boolean } = {}) => {
+  const next = {
+    ...workspace,
+    version: CURRENT_WORKSPACE_VERSION,
+    updatedAt: options.touch === false ? workspace.updatedAt : new Date().toISOString(),
+  };
+  if (typeof localStorage !== 'undefined') localStorage.setItem(key, JSON.stringify(next));
+  return next;
 };
 export const newId = id;
 export const storageKey = key;
