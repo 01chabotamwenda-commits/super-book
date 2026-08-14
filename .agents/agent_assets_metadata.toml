@@ -28,3 +28,10 @@ uri = "file://desktop/icon-options/preview.html"
 type = "text"
 title = "i-Buk icon directions"
 description = "Four standalone SVG icon concepts for choosing the final i-Buk Windows app icon."
+
+[[outputs]]
+id = "grIiksbAOun0S5n35d3Sh"
+uri = "file://desktop/icon-options/folded-b-mark.ico"
+type = "image"
+title = "i-Buk folded-page B Windows icon"
+description = "Selected folded-page B mark, generated as a multi-resolution Windows ICO for the installer and shortcuts."

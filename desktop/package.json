@@ -32,6 +32,7 @@
       "output": "dist"
     },
     "win": {
+      "icon": "icon-options/folded-b-mark.ico",
       "target": [
         {
           "target": "nsis",
