@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>i-Buk icon directions</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #193f38;
+        --muted: #6a7d76;
+        --paper: #fbf5e9;
+        --line: #e6ded0;
+        --accent: #d97850;
+        --shadow: 0 22px 55px rgba(31, 81, 71, .10);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: linear-gradient(145deg, #f7f1e7, #fffaf1 56%, #f2eadc);
+        color: var(--ink);
+        font: 16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 72px 0 84px; }
+      header { max-width: 680px; margin-bottom: 44px; }
+      .eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+      h1 { margin: 12px 0 10px; font: 700 clamp(36px, 5vw, 62px)/.98 Georgia, serif; letter-spacing: -.04em; }
+      .intro { margin: 0; color: var(--muted); font-size: 18px; max-width: 620px; }
+      .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+      .card { background: rgba(255,255,255,.62); border: 1px solid rgba(230,222,208,.9); border-radius: 28px; padding: 18px; box-shadow: var(--shadow); }
+      .art { display: grid; place-items: center; aspect-ratio: 1; border-radius: 20px; background: #f1eadf; padding: 24px; }
+      .art svg { width: 100%; height: 100%; filter: drop-shadow(0 12px 15px rgba(31,81,71,.12)); }
+      .number { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-top: 20px; border-radius: 50%; background: var(--ink); color: white; font-size: 12px; font-weight: 800; }
+      h2 { margin: 10px 0 5px; font: 700 24px/1.05 Georgia, serif; letter-spacing: -.025em; }
+      .hypothesis { margin: 0; color: var(--accent); font-size: 13px; font-weight: 750; }
+      .tradeoff { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+      footer { margin-top: 32px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+      @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 560px) { main { width: min(100% - 28px, 440px); padding-top: 42px; } .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">i-Buk · icon directions</div>
+        <h1>Four ways to remember the app.</h1>
+        <p class="intro">Each direction is built to stay recognizable at desktop, taskbar, and small shortcut sizes. Choose the metaphor that feels most like i-Buk.</p>
+      </header>
+      <section class="grid" aria-label="Icon concepts">
+        <article class="card">
+          <div class="art">
+            <svg viewBox="0 0 512 512" aria-label="Open book and spark"><defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ef9a62"/><stop offset="1" stop-color="#d86442"/></linearGradient><filter id="as" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#173d36" flood-opacity=".18"/></filter></defs><rect width="512" height="512" rx="116" fill="url(#a)"/><path d="M113 160c53-21 105-15 143 17v222c-42-29-93-35-143-13z" fill="#fbf5e9" filter="url(#as)"/><path d="M399 160c-53-21-105-15-143 17v222c42-29 93-35 143-13z" fill="#f5ead8" filter="url(#as)"/><path d="M256 177v222" stroke="#1f5147" stroke-width="12" stroke-linecap="round"/><path d="M144 211c34-8 67-2 100 15M144 251c34-8 67-2 100 15M368 211c-34-8-67-2-100 15M368 251c-34-8-67-2-100 15" fill="none" stroke="#d87b51" stroke-width="9" stroke-linecap="round" opacity=".72"/><path d="m256 83 10 28 28 10-28 10-10 28-10-28-28-10 28-10z" fill="#1f5147"/><circle cx="325" cy="99" r="7" fill="#f8d277"/></svg>
+          </div>
+          <span class="number">01</span>
+          <h2>Open book + spark</h2>
+          <p class="hypothesis">Study becomes insight.</p>
+          <p class="tradeoff">The clearest learning signal; the spark adds a small moment of discovery.</p>
+        </article>
+        <article class="card">
+          <div class="art">
+            <svg viewBox="0 0 512 512" aria-label="Folded page B mark"><defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1f5147"/><stop offset="1" stop-color="#153a35"/></linearGradient><filter id="bs" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#102d29" flood-opacity=".28"/></filter></defs><rect width="512" height="512" rx="116" fill="url(#b)"/><path d="M154 112h157l58 58v229H154z" fill="#fbf5e9" filter="url(#bs)"/><path d="M311 112v58h58" fill="#f0c17e"/><path d="M311 112v58h58" fill="none" stroke="#d87b51" stroke-width="8" stroke-linejoin="round"/><path d="M214 198v116M214 198h49c37 0 52 49 8 58h-57 61c44 0 43 58-4 58h-57" fill="none" stroke="#1f5147" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/><path d="M173 369h192" stroke="#d87b51" stroke-width="12" stroke-linecap="round"/><circle cx="135" cy="142" r="10" fill="#f8d277"/></svg>
+          </div>
+          <span class="number">02</span>
+          <h2>Folded-page “B”</h2>
+          <p class="hypothesis">The name becomes the mark.</p>
+          <p class="tradeoff">Most ownable as a brand symbol; it takes one extra glance to read as a book.</p>
+        </article>
+        <article class="card">
+          <div class="art">
+            <svg viewBox="0 0 512 512" aria-label="Book and planner grid"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e88955"/><stop offset="1" stop-color="#c9573f"/></linearGradient><filter id="cs" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="15" stdDeviation="12" flood-color="#173d36" flood-opacity=".2"/></filter></defs><rect width="512" height="512" rx="116" fill="url(#c)"/><rect x="113" y="111" width="286" height="220" rx="28" fill="#fbf5e9" filter="url(#cs)"/><rect x="139" y="143" width="234" height="39" rx="12" fill="#1f5147"/><path d="M163 143v-19M349 143v-19" stroke="#fbf5e9" stroke-width="13" stroke-linecap="round"/><path d="M158 213h196M158 258h196M158 303h196M224 194v125M290 194v125" stroke="#d87b51" stroke-width="9" opacity=".65"/><path d="M151 384c37-28 75-31 105-10V235c-33-20-69-18-105 0z" fill="#f7e9d7" stroke="#1f5147" stroke-width="11" stroke-linejoin="round"/><path d="M361 384c-37-28-75-31-105-10V235c33-20 69-18 105 0z" fill="#fbf5e9" stroke="#1f5147" stroke-width="11" stroke-linejoin="round"/><path d="M256 237v137" stroke="#1f5147" stroke-width="10" stroke-linecap="round"/><path d="M177 267h50M335 267h-50M177 298h50M335 298h-50" stroke="#d87b51" stroke-width="8" stroke-linecap="round" opacity=".75"/></svg>
+          </div>
+          <span class="number">03</span>
+          <h2>Book + planner grid</h2>
+          <p class="hypothesis">Learning meets the week.</p>
+          <p class="tradeoff">Most specific to the product’s study-planning promise; denser at tiny sizes.</p>
+        </article>
+        <article class="card">
+          <div class="art">
+            <svg viewBox="0 0 512 512" aria-label="Bookmark shield"><defs><linearGradient id="d" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0a268"/><stop offset="1" stop-color="#d66743"/></linearGradient><filter id="ds" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="16" stdDeviation="13" flood-color="#173d36" flood-opacity=".2"/></filter></defs><rect width="512" height="512" rx="116" fill="url(#d)"/><path d="M256 88 385 137v108c0 91-52 145-129 181-77-36-129-90-129-181V137z" fill="#1f5147" filter="url(#ds)"/><path d="M212 154h88v183l-44-31-44 31z" fill="#fbf5e9"/><path d="m256 179 12 32 34 2-27 21 9 33-28-18-28 18 9-33-27-21 34-2z" fill="#f0a268"/><path d="M256 399c-57-29-91-69-101-120" fill="none" stroke="#6c9a86" stroke-width="10" stroke-linecap="round" opacity=".8"/><circle cx="342" cy="155" r="9" fill="#f8d277"/><circle cx="370" cy="181" r="5" fill="#f8d277"/></svg>
+          </div>
+          <span class="number">04</span>
+          <h2>Bookmark shield</h2>
+          <p class="hypothesis">Progress feels protected.</p>
+          <p class="tradeoff">Strong, trustworthy silhouette; less literal about books and more about keeping knowledge.</p>
+        </article>
+      </section>
+      <footer>These are concept assets only. The Windows installer icon remains unchanged until one direction is selected.</footer>
+    </main>
+  </body>
+</html>

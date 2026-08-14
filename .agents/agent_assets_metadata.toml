@@ -21,3 +21,10 @@ uri = "file://docs/i-buk-implementation-status.md"
 type = "text"
 title = "i-Buk Implementation Status"
 description = "Canonical Markdown comparison of the current implementation against the i-Buk development playbook, including completed features, remaining work, deferred integrations, and release checks."
+
+[[outputs]]
+id = "Xfo8jzWM7vI0yCWvBsQNO"
+uri = "file://desktop/icon-options/preview.html"
+type = "text"
+title = "i-Buk icon directions"
+description = "Four standalone SVG icon concepts for choosing the final i-Buk Windows app icon."
