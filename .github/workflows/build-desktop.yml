@@ -2,41 +2,56 @@ name: Build Desktop App (Electron)
 
 on:
   push:
-    branches: [main, master]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: windows-latest
+  build-renderer:
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: Windows 11 x64
+    name: Build renderer
 
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install pnpm
+      - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
-          run_install: false
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: 24
           cache: pnpm
 
-      - name: Install workspace dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build API server
-        run: pnpm --filter @workspace/api-server run build
+      - name: Typecheck i-Buk
+        run: pnpm --filter @workspace/i-buk run typecheck
 
-      - name: Build React frontend
+      - name: Test local domain logic
+        run: pnpm --filter @workspace/i-buk run test
+
+      - name: Check config formatting
+        run: |
+          pnpm exec prettier --check package.json
+          node -e "JSON.parse(require('node:fs').readFileSync('desktop/package.json', 'utf8'))"
+
+      - name: Check desktop JavaScript syntax
+        run: |
+          node --check desktop/main.cjs
+          node --check desktop/preload.cjs
+          node --check desktop/path-utils.cjs
+          node --check desktop/workspace-store.cjs
+          node --test desktop/path-utils.test.cjs desktop/workspace-store.test.cjs
+
+      - name: Build i-Buk renderer
         env:
           BASE_PATH: "./"
           PORT: "21211"
@@ -45,10 +60,56 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: pnpm --filter @workspace/i-buk run build
 
+      - name: Upload renderer
+        uses: actions/upload-artifact@v4
+        with:
+          name: i-Buk-renderer
+          path: artifacts/i-buk/dist/public
+          if-no-files-found: error
+          retention-days: 1
+
+  build-installer:
+    needs: build-renderer
+    runs-on: windows-latest
+    timeout-minutes: 30
+    name: Windows 11 x64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Download renderer
+        uses: actions/download-artifact@v4
+        with:
+          name: i-Buk-renderer
+          path: artifacts/i-buk/dist/public
+
+      - name: Verify renderer
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "artifacts/i-buk/dist/public/index.html")) {
+            throw "The renderer artifact did not contain index.html."
+          }
+
       - name: Install Electron dependencies
         working-directory: desktop
+        shell: pwsh
         run: |
-          node -e "const fs = require('fs'); const file = 'package-lock.json'; const lock = fs.readFileSync(file, 'utf8'); fs.writeFileSync(file, lock.replaceAll('http://package-firewall.replit.local/npm/', 'https://registry.npmjs.org/'));"
+          $lockPath = Join-Path $PWD "package-lock.json"
+          $lock = Get-Content -Raw $lockPath
+          $lock = $lock.Replace(
+            "http://package-firewall.replit.local/npm/",
+            "https://registry.npmjs.org/"
+          )
+          Set-Content -Path $lockPath -Value $lock -NoNewline
+          if ($lock.Contains("package-firewall.replit.local")) {
+            throw "The Electron lockfile still contains an internal package registry URL."
+          }
           npm ci --registry=https://registry.npmjs.org
 
       - name: Build Windows installer
