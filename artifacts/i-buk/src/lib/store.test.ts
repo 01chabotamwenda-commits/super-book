@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   canSetFolderParent,
   canSetTopicParent,
+  emptyWorkspace,
   folderDescendantIds,
   moveTopic,
   removeFolderBranch,
@@ -12,6 +13,16 @@ import {
   sampleWorkspace,
   topicDescendantIds,
 } from './store.ts';
+
+test('new workspaces start empty instead of shipping sample records', () => {
+  const workspace = emptyWorkspace();
+  assert.equal(workspace.courses.length, 0);
+  assert.equal(workspace.topics.length, 0);
+  assert.equal(workspace.materials.length, 0);
+  assert.equal(workspace.exams.length, 0);
+  assert.equal(workspace.sessions.length, 0);
+  assert.equal(workspace.notes.length, 0);
+});
 
 test('normalizes legacy sessions and preserves their history', () => {
   const source = sampleWorkspace();

@@ -71,10 +71,25 @@ export type Workspace = {
 };
 
 const key = 'ibuk-workspace-v1';
+const emptyWorkspaceTimestamp = new Date(0).toISOString();
 const isoDay = (offset: number) => addDays(dateKey(), offset);
 const id = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 const atNoon = (date: string) => `${date}T12:00:00`;
 const atEnd = (date: string, minutes: number) => new Date(new Date(atNoon(date)).getTime() + minutes * 60000).toISOString();
+
+export const emptyWorkspace = (): Workspace => ({
+  version: CURRENT_WORKSPACE_VERSION,
+  updatedAt: emptyWorkspaceTimestamp,
+  profile: { name: 'Student' },
+  courses: [],
+  topics: [],
+  folders: [],
+  materials: [],
+  exams: [],
+  sessions: [],
+  notes: [],
+  availability: { days: [1, 2, 3, 4, 5], start: '16:00', end: '20:00', dailyMinutes: 120 },
+});
 
 export const sampleWorkspace = (): Workspace => ({
   version: CURRENT_WORKSPACE_VERSION,
@@ -239,7 +254,7 @@ export const parseWorkspace = (value: unknown): Workspace | null => {
 };
 
 export const loadWorkspace = (): Workspace => {
-  if (typeof localStorage === 'undefined') return sampleWorkspace();
+  if (typeof localStorage === 'undefined') return emptyWorkspace();
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
@@ -251,9 +266,7 @@ export const loadWorkspace = (): Workspace => {
       }
     }
   } catch { /* a fresh workspace is a safe fallback */ }
-  const fresh = sampleWorkspace();
-  saveWorkspace(fresh);
-  return fresh;
+  return emptyWorkspace();
 };
 
 export const saveWorkspace = (workspace: Workspace, options: { touch?: boolean } = {}) => {
