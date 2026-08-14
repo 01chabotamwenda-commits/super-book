@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Route, Router as WouterRouter, Switch, useLocation, useSearch } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import type { User } from '@supabase/supabase-js';
 import {
   Archive,
   ArrowDownToLine, ArrowUpFromLine, BookOpen, CalendarDays, Check, CheckCircle2,
@@ -10,10 +11,12 @@ import {
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
+import { getAuthState, signInWithPassword, signOut, signUpWithPassword, type AuthState } from '@/lib/auth';
 import { canSetFolderParent, canSetTopicParent, emptyWorkspace, folderDescendantIds, moveFolder, moveTopic, removeFolderBranch, removeTopicBranch, type Availability, type Course, type Exam, type Folder, type Material, type Note, type Topic, type Workspace, loadWorkspace, newId, parseWorkspace, reorderFolder, reorderTopic, saveWorkspace, topicDescendantIds } from '@/lib/store';
 import { checkLocalPath, chooseLocalFile, copyMaterialPath, getDesktopStatus, getDesktopWindowControls, loadDesktopWorkspace, openMaterialReference, saveDesktopWorkspace, syncDesktopReminders, type ChosenFile, type DesktopWindowControls, type LocalPathMetadata } from '@/lib/desktop';
 import { addDays, buildScheduleBlocks, courseSummaries, daysUntil, minutesBetween, neglectedTopics, recommendations, topicSummaries } from '@/lib/planner';
 import { DEFAULT_WORKSPACE_ID, getDeviceId, syncWorkspaceSnapshot } from '@/lib/sync';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { APP_TIME_ZONE, dateKey, formatFocusTiming, greetingFor, minutesUntil } from '@/lib/time';
 import './index.css';
 
@@ -122,6 +125,66 @@ function DesktopChrome({ children }: { children: React.ReactNode }) {
     <div className="desktop-app-content">{children}</div>
   </div>;
 }
+
+function AuthScreen({ configured }: { configured: boolean }) {
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setNotice('');
+    setLoading(true);
+    const result = mode === 'sign-in'
+      ? await signInWithPassword(email.trim(), password)
+      : await signUpWithPassword(email.trim(), password);
+    setLoading(false);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    if (mode === 'sign-up' && !result.session) {
+      setNotice('Account created. Check your email to confirm it, then sign in.');
+      setMode('sign-in');
+      setPassword('');
+    }
+  };
+
+  return <main className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <section className="w-full max-w-md rounded-3xl border border-card-border bg-card p-7 shadow-xl shadow-primary/5 sm:p-9">
+      <div className="flex items-center gap-3">
+        <span className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground"><BookOpen size={21} /></span>
+        <div><div className="font-serif text-2xl">i-Buk</div><div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Study planner</div></div>
+      </div>
+      <div className="mt-9">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Private workspace</p>
+        <h1 className="mt-2 font-serif text-4xl">{configured ? (mode === 'sign-in' ? 'Welcome back.' : 'Create your account.') : 'Cloud sync is not configured.'}</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{configured ? 'Sign in to restore your workspace and keep it synced across devices.' : 'Add the Supabase VITE configuration to enable account access for this build.'}</p>
+      </div>
+      {configured ? <form className="mt-7 grid gap-4" onSubmit={submit}>
+        <Field label="Email address"><TextInput autoComplete="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" data-testid="input-auth-email" /></Field>
+        <Field label="Password" hint={mode === 'sign-up' ? 'Use at least 6 characters.' : undefined}><TextInput autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} type="password" minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" data-testid="input-auth-password" /></Field>
+        {error && <p className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive" role="alert" data-testid="text-auth-error">{error}</p>}
+        {notice && <p className="rounded-xl bg-primary/10 px-3 py-2.5 text-sm text-primary" role="status" data-testid="text-auth-notice">{notice}</p>}
+        <Button type="submit" disabled={loading} className="mt-2 w-full py-2.5" data-testid="button-auth-submit">{loading ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
+        <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setNotice(''); }} data-testid="button-auth-toggle">{mode === 'sign-in' ? 'Need an account? Create one' : 'Already have an account? Sign in'}</button>
+      </form> : <div className="mt-7 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground">This screen is ready, but the build does not have a usable Supabase client configuration yet.</div>}
+      <p className="mt-8 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">Your workspace data is scoped to your account. The planner stays empty until you add your own courses and topics.</p>
+    </section>
+  </main>;
+}
+
+function AccountControls({ user, onSignOut }: { user: User; onSignOut: () => Promise<void> }) {
+  return <div className="fixed bottom-5 right-5 z-30 flex items-center gap-3 rounded-2xl border border-card-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
+    <div className="hidden text-right sm:block"><div className="text-xs font-semibold text-foreground">{user.email}</div><div className="text-[10px] text-muted-foreground">Cloud sync enabled</div></div>
+    <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => void onSignOut()} data-testid="button-sign-out">Sign out</Button>
+  </div>;
+}
+
 function EmptyState({ icon: Icon, title, copy, action }: { icon: typeof Archive; title: string; copy: string; action?: React.ReactNode }) {
   return <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-14 text-center"><div className="mb-4 grid size-12 place-items-center rounded-2xl bg-secondary text-primary"><Icon size={22} /></div><h3 className="font-serif text-xl">{title}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{copy}</p>{action && <div className="mt-5">{action}</div>}</div>;
 }
@@ -521,7 +584,7 @@ function StatsPage({ workspace }: { workspace: Workspace }) {
 }
 function Metric({ label, value, detail, icon: Icon }: { label: string; value: string; detail: string; icon: typeof Clock3 }) { return <div className="rounded-2xl border border-card-border bg-card p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{label}</span><Icon size={17} className="text-primary" /></div><div className="mt-4 font-serif text-3xl">{value}</div><div className="mt-1 text-xs text-muted-foreground">{detail}</div></div>; }
 
-function SettingsPage({ workspace, update }: { workspace: Workspace; update: (next: Workspace) => void }) {
+function SettingsPage({ workspace, update, user, onSignOut }: { workspace: Workspace; update: (next: Workspace) => void; user: User; onSignOut: () => Promise<void> }) {
   const fileInput = useRef<HTMLInputElement>(null); const [name, setName] = useState(workspace.profile.name); const [saved, setSaved] = useState(false); const [desktopStatus, setDesktopStatus] = useState<{ notifications: boolean } | null>(null);
   useEffect(() => { void getDesktopStatus().then(setDesktopStatus); }, []);
   const saveName = () => { update({ ...workspace, profile: { name: name.trim() || 'Student' } }); setSaved(true); window.setTimeout(() => setSaved(false), 1800); };
