@@ -15,7 +15,7 @@ import { getAuthState, signInWithPassword, signOut, signUpWithPassword, type Aut
 import { canSetFolderParent, canSetTopicParent, emptyWorkspace, folderDescendantIds, moveFolder, moveTopic, removeFolderBranch, removeTopicBranch, type Availability, type Course, type Exam, type Folder, type Material, type Note, type Topic, type Workspace, loadWorkspace, newId, parseWorkspace, reorderFolder, reorderTopic, saveWorkspace, topicDescendantIds } from '@/lib/store';
 import { checkLocalPath, chooseLocalFile, copyMaterialPath, getDesktopStatus, getDesktopWindowControls, loadDesktopWorkspace, openMaterialReference, saveDesktopWorkspace, syncDesktopReminders, type ChosenFile, type DesktopWindowControls, type LocalPathMetadata } from '@/lib/desktop';
 import { addDays, buildScheduleBlocks, courseSummaries, daysUntil, minutesBetween, neglectedTopics, recommendations, topicSummaries } from '@/lib/planner';
-import { DEFAULT_WORKSPACE_ID, getDeviceId, syncWorkspaceSnapshot } from '@/lib/sync';
+import { DEFAULT_WORKSPACE_ID, getDeviceId, syncWorkspaceSnapshot, type SyncResult } from '@/lib/sync';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { APP_TIME_ZONE, dateKey, formatFocusTiming, greetingFor, minutesUntil } from '@/lib/time';
 import './index.css';
@@ -187,6 +187,26 @@ function AccountControls({ user, onSignOut }: { user: User; onSignOut: () => Pro
   </div>;
 }
 
+type SyncState = SyncResult['status'] | 'syncing';
+
+function SyncStatus({ status, message }: { status: SyncState; message?: string }) {
+  const copy = {
+    local: 'Local only',
+    syncing: 'Syncing…',
+    synced: 'Cloud synced',
+    error: 'Sync needs attention',
+  }[status];
+  const tone = status === 'error'
+    ? 'bg-destructive/10 text-destructive'
+    : status === 'synced'
+      ? 'bg-primary/10 text-primary'
+      : 'bg-muted text-muted-foreground';
+  return <div className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone}`} role={status === 'error' ? 'alert' : 'status'} title={message}>
+    <span className={`size-1.5 rounded-full ${status === 'error' ? 'bg-destructive' : status === 'synced' ? 'bg-primary' : 'bg-muted-foreground'}`} />
+    {copy}
+  </div>;
+}
+
 function EmptyState({ icon: Icon, title, copy, action }: { icon: typeof Archive; title: string; copy: string; action?: React.ReactNode }) {
   return <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-14 text-center"><div className="mb-4 grid size-12 place-items-center rounded-2xl bg-secondary text-primary"><Icon size={22} /></div><h3 className="font-serif text-xl">{title}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{copy}</p>{action && <div className="mt-5">{action}</div>}</div>;
 }
@@ -230,7 +250,7 @@ function WorkspaceSearch({ workspace }: { workspace: Workspace }) {
   </div>;
 }
 
-function Shell({ children, workspace }: { children: React.ReactNode; workspace: Workspace }) {
+function Shell({ children, workspace, syncState }: { children: React.ReactNode; workspace: Workspace; syncState: { status: SyncState; message?: string } }) {
   const [location] = useLocation();
   const search = useSearch();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -254,6 +274,9 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
     };
   }, [workspaceMenuOpen]);
   return <div className="paper-grain min-h-[100dvh] bg-background">
+    <div className="fixed bottom-5 left-5 z-30 rounded-2xl border border-card-border bg-card/95 p-1 shadow-lg backdrop-blur">
+      <SyncStatus status={syncState.status} message={syncState.message} />
+    </div>
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col bg-sidebar px-4 py-5 text-sidebar-foreground transition-transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="mb-9 flex items-center justify-between px-2"><Link href="/" className="flex items-center gap-3" data-testid="link-brand"><span className="grid size-9 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground"><BookOpen size={19} strokeWidth={2.5} /></span><span><span className="block font-serif text-xl leading-none">i-Buk</span><span className="font-mono text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">study planner</span></span></Link><Button variant="ghost" className="p-1.5 text-sidebar-foreground md:hidden" onClick={() => setMobileOpen(false)} data-testid="button-close-mobile-nav"><X size={17} /></Button></div>
       <div className="mb-3 px-3 font-mono text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Workspace</div>
@@ -598,8 +621,16 @@ function SettingsPage({ workspace, update, user, onSignOut }: { workspace: Works
 
 function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<void> }) {
   const [workspace, setWorkspace] = useState<Workspace>(() => loadWorkspace());
+  const [syncState, setSyncState] = useState<{ status: SyncState; message?: string }>({ status: 'syncing' });
   const deviceId = useRef<string | null>(null);
   if (!deviceId.current) deviceId.current = getDeviceId();
+  const applySyncResult = (result: SyncResult) => {
+    setSyncState(result.status === 'error' ? { status: 'error', message: result.error.message } : { status: result.status });
+    if (result.workspace.updatedAt !== workspace.updatedAt) {
+      setWorkspace(result.workspace);
+      void saveDesktopWorkspace(result.workspace);
+    }
+  };
   useEffect(() => {
     let active = true;
     void loadDesktopWorkspace().then((raw) => {
@@ -618,11 +649,8 @@ function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<
   useEffect(() => {
     let active = true;
     const localWorkspace = workspace;
-    void syncWorkspaceSnapshot(DEFAULT_WORKSPACE_ID, localWorkspace, deviceId.current!).then((syncedWorkspace) => {
-      if (active && syncedWorkspace.updatedAt !== localWorkspace.updatedAt) {
-        setWorkspace(syncedWorkspace);
-        void saveDesktopWorkspace(syncedWorkspace);
-      }
+    void syncWorkspaceSnapshot(DEFAULT_WORKSPACE_ID, localWorkspace, deviceId.current!).then((result) => {
+      if (active) applySyncResult(result);
     });
     return () => { active = false; };
   }, []);
@@ -630,11 +658,9 @@ function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<
     const persisted = saveWorkspace(next);
     setWorkspace(persisted);
     void saveDesktopWorkspace(persisted);
-    void syncWorkspaceSnapshot(DEFAULT_WORKSPACE_ID, persisted, deviceId.current!).then((syncedWorkspace) => {
-      if (syncedWorkspace.updatedAt !== persisted.updatedAt) {
-        setWorkspace(syncedWorkspace);
-        void saveDesktopWorkspace(syncedWorkspace);
-      }
+    setSyncState({ status: 'syncing' });
+    void syncWorkspaceSnapshot(DEFAULT_WORKSPACE_ID, persisted, deviceId.current!).then((result) => {
+      applySyncResult(result);
     });
   };
   useEffect(() => {
@@ -643,7 +669,7 @@ function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<
       .map((note) => ({ id: `${note.id}:${note.reminder}`, title: note.title, body: note.body, reminder: note.reminder! }));
     void syncDesktopReminders(reminders);
   }, [workspace.notes]);
-  return <Shell workspace={workspace}><Switch><Route path="/"><HomePage workspace={workspace} update={update} /></Route><Route path="/workspace"><WorkspacePage workspace={workspace} /></Route><Route path="/library"><LibraryPage workspace={workspace} update={update} /></Route><Route path="/schedule"><SchedulePage workspace={workspace} update={update} /></Route><Route path="/notes"><NotesPage workspace={workspace} update={update} /></Route><Route path="/stats"><StatsPage workspace={workspace} /></Route><Route path="/settings"><SettingsPage workspace={workspace} update={update} user={user} onSignOut={onSignOut} /></Route><Route component={NotFound} /></Switch></Shell>;
+  return <Shell workspace={workspace} syncState={syncState}><Switch><Route path="/"><HomePage workspace={workspace} update={update} /></Route><Route path="/workspace"><WorkspacePage workspace={workspace} /></Route><Route path="/library"><LibraryPage workspace={workspace} update={update} /></Route><Route path="/schedule"><SchedulePage workspace={workspace} update={update} /></Route><Route path="/notes"><NotesPage workspace={workspace} update={update} /></Route><Route path="/stats"><StatsPage workspace={workspace} /></Route><Route path="/settings"><SettingsPage workspace={workspace} update={update} user={user} onSignOut={onSignOut} /></Route><Route component={NotFound} /></Switch></Shell>;
 }
 function App() {
   const [authState, setAuthState] = useState<AuthState>(() => isSupabaseConfigured ? { status: 'loading' } : { status: 'unconfigured' });

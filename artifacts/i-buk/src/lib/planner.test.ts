@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildScheduleBlocks, courseSummaries, neglectedTopics, recommendations, topicSummaries } from './planner.ts';
+import { buildScheduleBlocks, courseSummaries, daysUntil, neglectedTopics, recommendations, topicSummaries } from './planner.ts';
 import { sampleWorkspace } from './store.ts';
 
 test('study summaries aggregate repeated events by topic and course', () => {
@@ -30,7 +30,12 @@ test('topic summaries use recorded session history instead of stale topic metada
   const workspace = sampleWorkspace();
   workspace.topics = workspace.topics.map((topic) => topic.id === 'topic-memory' ? { ...topic, lastStudied: '2099-01-01' } : topic);
   const summary = topicSummaries(workspace).find((item) => item.topicId === 'topic-memory');
-  assert.equal(summary?.lastStudied, '2026-08-08');
+  const latestSession = workspace.sessions
+    .filter((session) => session.topicId === 'topic-memory')
+    .map((session) => session.date)
+    .sort()
+    .at(-1);
+  assert.equal(summary?.lastStudied, latestSession);
 });
 
 test('neglected topics prioritize never-studied and oldest active topics', () => {
@@ -38,7 +43,9 @@ test('neglected topics prioritize never-studied and oldest active topics', () =>
   const neglected = neglectedTopics(workspace, '2026-08-13');
   assert.equal(neglected[0]?.topic.id, 'topic-research');
   assert.equal(neglected[0]?.reason, 'not studied yet');
-  assert.ok(neglected.find((item) => item.topic.id === 'topic-regression')?.daysSinceStudied === 10);
+  const regression = neglected.find((item) => item.topic.id === 'topic-regression');
+  const regressionSessionDate = workspace.sessions.find((session) => session.topicId === 'topic-regression')?.date;
+  assert.equal(regression?.daysSinceStudied, regressionSessionDate ? daysUntil('2026-08-13', regressionSessionDate) : undefined);
   assert.equal(neglected.some((item) => item.topic.status === 'done'), false);
 });
 

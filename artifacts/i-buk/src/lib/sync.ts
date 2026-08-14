@@ -5,10 +5,23 @@ export const DEFAULT_WORKSPACE_ID = 'ibuk-default-workspace';
 const deviceStorageKey = 'ibuk-device-id';
 const queues = new Map<string, Promise<void>>();
 
+export type SyncResult =
+  | { status: 'local'; workspace: Workspace }
+  | { status: 'synced'; workspace: Workspace }
+  | { status: 'error'; workspace: Workspace; error: Error };
+
 const timestamp = (value: string | undefined) => {
   if (!value) return 0;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const errorFrom = (value: unknown, fallback: string) => {
+  if (value instanceof Error) return value;
+  if (typeof value === 'object' && value !== null && 'message' in value && typeof value.message === 'string') {
+    return new Error(value.message);
+  }
+  return new Error(fallback);
 };
 
 export const getDeviceId = (): string => {
@@ -22,12 +35,19 @@ export const getDeviceId = (): string => {
   return next;
 };
 
-const syncSnapshot = async (workspaceId: string, localData: Workspace, deviceId: string): Promise<Workspace> => {
-  if (!supabase) return localData;
+const syncSnapshot = async (workspaceId: string, localData: Workspace, deviceId: string): Promise<SyncResult> => {
+  if (!supabase) return { status: 'local', workspace: localData };
 
   try {
     const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) return localData;
+    if (userError) return { status: 'error', workspace: localData, error: errorFrom(userError, 'Your session could not be verified.') };
+    if (!userData.user) {
+      return {
+        status: 'error',
+        workspace: localData,
+        error: new Error('Your session could not be verified. Sign in again to sync.'),
+      };
+    }
 
     const user = userData.user;
     const { data: cloudSnapshot, error: snapshotError } = await supabase
@@ -37,15 +57,21 @@ const syncSnapshot = async (workspaceId: string, localData: Workspace, deviceId:
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (snapshotError) return localData;
+    if (snapshotError) return { status: 'error', workspace: localData, error: errorFrom(snapshotError, 'Cloud sync could not load your workspace.') };
 
     const cloudTimestamp = timestamp(cloudSnapshot?.updated_at);
     if (cloudSnapshot && cloudTimestamp > timestamp(localData.updatedAt)) {
       const cloudWorkspace = parseWorkspace(cloudSnapshot.payload);
-      if (!cloudWorkspace) return localData;
+      if (!cloudWorkspace) {
+        return {
+          status: 'error',
+          workspace: localData,
+          error: new Error('The cloud workspace could not be read. Your local copy is still available.'),
+        };
+      }
       const restored = { ...cloudWorkspace, updatedAt: new Date(cloudTimestamp).toISOString() };
       saveWorkspace(restored, { touch: false });
-      return restored;
+      return { status: 'synced', workspace: restored };
     }
 
     const updatedAt = localData.updatedAt || new Date().toISOString();
@@ -59,13 +85,16 @@ const syncSnapshot = async (workspaceId: string, localData: Workspace, deviceId:
       updated_at: updatedAt,
     }, { onConflict: 'user_id,workspace_id' });
 
-    return upsertError ? localData : payload;
-  } catch {
-    return localData;
+    if (upsertError) {
+      return { status: 'error', workspace: localData, error: errorFrom(upsertError, 'Cloud sync could not save your workspace.') };
+    }
+    return { status: 'synced', workspace: payload };
+  } catch (error) {
+    return { status: 'error', workspace: localData, error: errorFrom(error, 'Cloud sync failed unexpectedly.') };
   }
 };
 
-export const syncWorkspaceSnapshot = (workspaceId: string, localData: Workspace, deviceId: string): Promise<Workspace> => {
+export const syncWorkspaceSnapshot = (workspaceId: string, localData: Workspace, deviceId: string): Promise<SyncResult> => {
   const previous = queues.get(workspaceId) ?? Promise.resolve();
   const current = previous.catch(() => undefined).then(() => syncSnapshot(workspaceId, localData, deviceId));
   const tail = current.then(() => undefined, () => undefined);
