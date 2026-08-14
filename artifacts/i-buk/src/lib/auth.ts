@@ -13,13 +13,13 @@ export const getAuthState = (session: Session | null): AuthState =>
     : { status: 'signed-out' };
 
 export async function signInWithPassword(email: string, password: string) {
-  if (!supabase) return { error: new Error('Supabase is not configured for this build.') };
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return { error };
+  if (!supabase) return { error: new Error('Supabase is not configured for this build.'), session: null };
+  const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+  return { error, session: data.session };
 }
 
 export async function signUpWithPassword(email: string, password: string) {
-  if (!supabase) return { error: new Error('Supabase is not configured for this build.') };
+  if (!supabase) return { error: new Error('Supabase is not configured for this build.'), session: null };
   const { error, data } = await supabase.auth.signUp({ email, password });
   return { error, session: data.session };
 }
