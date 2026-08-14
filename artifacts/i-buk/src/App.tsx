@@ -7,7 +7,7 @@ import {
   ArrowDownToLine, ArrowUpFromLine, BookOpen, CalendarDays, Check, CheckCircle2,
   ChevronDown, ChevronRight, CircleHelp, Clock3, FileText, FolderOpen, GraduationCap,
   FolderPlus, ArrowDown, ArrowUp, LayoutDashboard, LibraryBig, Link2, ListPlus, Menu, Pencil, Pin,
-  Minus, Plus, RotateCcw, Search, Settings2, Sparkles, Trash2, TrendingUp, X, Zap, Copy, Maximize2, Minimize2,
+  Minus, Plus, RotateCcw, Search, Settings2, Sparkles, Trash2, TrendingUp, X, Zap, Copy, Maximize2, Minimize2, Eye, EyeOff,
 } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import NotFound from '@/pages/not-found';
@@ -128,8 +128,10 @@ function DesktopChrome({ children }: { children: React.ReactNode }) {
 
 function AuthScreen({ configured }: { configured: boolean }) {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -138,17 +140,22 @@ function AuthScreen({ configured }: { configured: boolean }) {
     event.preventDefault();
     setError('');
     setNotice('');
+    const normalizedName = fullName.trim();
+    if (mode === 'sign-up' && !normalizedName) {
+      setError('Enter your name to create an account.');
+      return;
+    }
     setLoading(true);
     const result = mode === 'sign-in'
       ? await signInWithPassword(email.trim(), password)
-      : await signUpWithPassword(email.trim(), password);
+      : await signUpWithPassword(email.trim(), password, normalizedName);
     setLoading(false);
     if (result.error) {
       setError(result.error.message);
       return;
     }
     if (mode === 'sign-up' && !result.session) {
-      setNotice('Account created. Check your email to confirm it, then sign in.');
+      setNotice('Account created. You can sign in now.');
       setMode('sign-in');
       setPassword('');
     }
@@ -167,8 +174,9 @@ function AuthScreen({ configured }: { configured: boolean }) {
           <p className="mt-3 text-sm leading-6 text-muted-foreground">{configured ? 'Sign in to restore your workspace and keep it synced across devices.' : 'Add the Supabase VITE configuration to enable account access for this build.'}</p>
         </div>
         {configured ? <form className="mt-7 grid gap-4" onSubmit={submit}>
+          {mode === 'sign-up' && <Field label="Full name"><TextInput autoComplete="name" type="text" required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" data-testid="input-auth-name" /></Field>}
           <Field label="Email address"><TextInput autoComplete="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" data-testid="input-auth-email" /></Field>
-          <Field label="Password" hint={mode === 'sign-up' ? 'Use at least 6 characters.' : undefined}><TextInput autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} type="password" minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" data-testid="input-auth-password" /></Field>
+          <Field label="Password" hint={mode === 'sign-up' ? 'Use at least 6 characters.' : undefined}><div className="relative"><TextInput autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" className="w-full pr-11" data-testid="input-auth-password" /><button type="button" className="absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-lg text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} data-testid="button-toggle-password">{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></Field>
           {error && <p className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive" role="alert" data-testid="text-auth-error">{error}</p>}
           {notice && <p className="rounded-xl bg-primary/10 px-3 py-2.5 text-sm text-primary" role="status" data-testid="text-auth-notice">{notice}</p>}
           <Button type="submit" disabled={loading} className="mt-2 w-full py-2.5" data-testid="button-auth-submit">{loading ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
@@ -178,13 +186,6 @@ function AuthScreen({ configured }: { configured: boolean }) {
       </section>
     </main>
   );
-}
-
-function AccountControls({ user, onSignOut }: { user: User; onSignOut: () => Promise<void> }) {
-  return <div className="fixed bottom-5 right-5 z-30 flex items-center gap-3 rounded-2xl border border-card-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
-    <div className="hidden text-right sm:block"><div className="text-xs font-semibold text-foreground">{user.email}</div><div className="text-[10px] text-muted-foreground">Cloud sync enabled</div></div>
-    <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => void onSignOut()} data-testid="button-sign-out">Sign out</Button>
-  </div>;
 }
 
 type SyncState = SyncResult['status'] | 'syncing';
@@ -250,7 +251,7 @@ function WorkspaceSearch({ workspace }: { workspace: Workspace }) {
   </div>;
 }
 
-function Shell({ children, workspace, syncState }: { children: React.ReactNode; workspace: Workspace; syncState: { status: SyncState; message?: string } }) {
+function Shell({ children, workspace, syncState, user, onSignOut }: { children: React.ReactNode; workspace: Workspace; syncState: { status: SyncState; message?: string }; user: User; onSignOut: () => Promise<void> }) {
   const [location] = useLocation();
   const search = useSearch();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -274,16 +275,13 @@ function Shell({ children, workspace, syncState }: { children: React.ReactNode; 
     };
   }, [workspaceMenuOpen]);
   return <div className="paper-grain min-h-[100dvh] bg-background">
-    <div className="fixed bottom-5 left-5 z-30 rounded-2xl border border-card-border bg-card/95 p-1 shadow-lg backdrop-blur">
-      <SyncStatus status={syncState.status} message={syncState.message} />
-    </div>
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col bg-sidebar px-4 py-5 text-sidebar-foreground transition-transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col overflow-hidden bg-sidebar px-4 py-5 text-sidebar-foreground transition-transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="mb-9 flex items-center justify-between px-2"><Link href="/" className="flex items-center gap-3" data-testid="link-brand"><span className="grid size-9 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground"><BookOpen size={19} strokeWidth={2.5} /></span><span><span className="block font-serif text-xl leading-none">i-Buk</span><span className="font-mono text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">study planner</span></span></Link><Button variant="ghost" className="p-1.5 text-sidebar-foreground md:hidden" onClick={() => setMobileOpen(false)} data-testid="button-close-mobile-nav"><X size={17} /></Button></div>
       <div className="mb-3 px-3 font-mono text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Workspace</div>
        <nav className="grid gap-1">{navItems.map(({ href, label, icon: Icon }) => { const isActive = pathname === href; return <Link key={href} href={href} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined} data-testid={`link-nav-${label.toLowerCase()}`} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}`}><Icon size={17} /><span>{label}</span>{isActive && <span className="ml-auto size-1.5 rounded-full bg-sidebar-primary" />}</Link>; })}</nav>
-      <div className="mt-9 px-3 font-mono text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Your courses</div>
-       <div className="mt-3 grid gap-1">{workspace.courses.map((course) => { const isActive = pathname === '/library' && activeCourseId === course.id; return <Link key={course.id} href={`/library?course=${course.id}`} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined} data-testid={`link-course-${course.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}`}><span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: course.color }} /><span className="truncate font-semibold">{course.code}</span><span className={`ml-auto font-mono text-[10px] ${isActive ? 'text-sidebar-accent-foreground/70' : 'text-sidebar-foreground/40'}`}>{workspace.topics.filter((topic) => topic.courseId === course.id).length}</span>{isActive && <span className="size-1.5 rounded-full bg-sidebar-primary" />}</Link>; })}</div>
-       <div className="mt-auto grid gap-2"><div className="rounded-xl border border-sidebar-border bg-sidebar-accent/35 p-3"><div className="flex items-center gap-2 text-xs font-semibold"><span className="size-2 rounded-full bg-sidebar-primary" />Local only</div><p className="mt-1.5 text-[11px] leading-4 text-sidebar-foreground/55">Your workspace lives on this device.</p></div><Link href="/settings" onClick={() => setMobileOpen(false)} aria-current={pathname === '/settings' ? 'page' : undefined} data-testid="link-nav-settings" className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary ${pathname === '/settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}><Settings2 size={17} />Settings</Link></div>
+       <div className="mt-9 min-h-0 flex-1 overflow-y-auto"><div className="px-3 font-mono text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Your courses</div>
+        <div className="mt-3 grid gap-1">{workspace.courses.map((course) => { const isActive = pathname === '/library' && activeCourseId === course.id; return <Link key={course.id} href={`/library?course=${course.id}`} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined} data-testid={`link-course-${course.id}`} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}`}><span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: course.color }} /><span className="truncate font-semibold">{course.code}</span><span className={`ml-auto font-mono text-[10px] ${isActive ? 'text-sidebar-accent-foreground/70' : 'text-sidebar-foreground/40'}`}>{workspace.topics.filter((topic) => topic.courseId === course.id).length}</span>{isActive && <span className="size-1.5 rounded-full bg-sidebar-primary" />}</Link>; })}</div></div>
+        <div className="mt-4 grid shrink-0 gap-2 border-t border-sidebar-border pt-4"><div className="flex items-center justify-between gap-2 rounded-xl border border-sidebar-border bg-sidebar-accent/35 p-3"><div className="flex min-w-0 items-center gap-2 text-xs font-semibold"><span className="size-2 shrink-0 rounded-full bg-sidebar-primary" />Sync</div><SyncStatus status={syncState.status} message={syncState.message} /></div><div className="flex items-center gap-2 rounded-xl bg-sidebar-accent/35 p-2"><Link href="/settings" onClick={() => setMobileOpen(false)} aria-current={pathname === '/settings' ? 'page' : undefined} data-testid="link-nav-settings" className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-semibold transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary ${pathname === '/settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}><Settings2 size={17} /><span>Settings</span></Link><Button variant="secondary" className="shrink-0 px-2.5 py-1.5 text-xs" onClick={() => void onSignOut()} data-testid="button-sign-out">Sign out</Button></div><div className="truncate px-2 text-[10px] text-sidebar-foreground/50" title={user.email ?? undefined}>{user.email ?? 'Signed-in account'} · Cloud sync enabled</div></div>
     </aside>
     {mobileOpen && <div className="fixed inset-0 z-30 bg-sidebar/30 md:hidden" onClick={() => setMobileOpen(false)} />}
       <main className="min-h-[100dvh] md:pl-[248px]"><header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border/70 bg-background/85 px-5 backdrop-blur md:px-10"><div className="flex items-center gap-3"><Button variant="ghost" className="p-2 md:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-mobile-nav"><Menu size={20} /></Button><div ref={workspaceMenuRef} className="relative hidden items-center gap-1 text-xs text-muted-foreground sm:flex"><Link href="/workspace" onClick={() => setWorkspaceMenuOpen(false)} className="rounded-md px-1.5 py-1 font-medium transition hover:bg-muted hover:text-foreground" data-testid="link-workspace-breadcrumb">Workspace</Link><Button variant="ghost" className={`p-1 text-muted-foreground ${workspaceMenuOpen ? 'bg-muted text-foreground' : ''}`} onClick={() => setWorkspaceMenuOpen((open) => !open)} aria-label="Open workspace navigation" aria-expanded={workspaceMenuOpen} aria-haspopup="menu" data-testid="button-workspace-menu"><ChevronRight size={14} className={`transition-transform ${workspaceMenuOpen ? 'rotate-90' : ''}`} /></Button><span className="font-semibold text-foreground">{currentLabel}</span>{workspaceMenuOpen && <div role="menu" aria-label="Workspace navigation" className="absolute left-0 top-10 z-50 w-72 overflow-hidden rounded-xl border border-card-border bg-card p-2 shadow-xl"><div className="px-3 pb-2 pt-1 font-mono text-[10px] uppercase tracking-[.18em] text-muted-foreground">Workspace</div>{navItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} role="menuitem" onClick={() => setWorkspaceMenuOpen(false)} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${location === href ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`} data-testid={`menu-workspace-${label.toLowerCase()}`}><Icon size={16} className="text-primary" /><span className="flex-1">{label}</span>{location === href && <span className="size-1.5 rounded-full bg-primary" />}</Link>)}<div className="mx-2 my-2 border-t border-border" /><div className="px-3 pb-2 font-mono text-[10px] uppercase tracking-[.18em] text-muted-foreground">Courses</div>{workspace.courses.map((course) => <Link key={course.id} href={`/library?course=${course.id}`} role="menuitem" onClick={() => setWorkspaceMenuOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-muted" data-testid={`menu-course-${course.id}`}><span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: course.color }} /><span className="min-w-0 flex-1 truncate font-semibold">{course.name}</span><span className="font-mono text-[10px] text-muted-foreground">{course.code}</span></Link>)}</div>}</div><div className="flex items-center gap-2 text-xs text-muted-foreground sm:hidden"><BookOpen size={16} className="text-primary" /><span className="font-serif text-lg text-foreground">i-Buk</span></div></div><div className="flex items-center gap-3"><WorkspaceSearch workspace={workspace} /><Link href="/settings" className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground" data-testid="link-profile">{initials(workspace.profile.name)}</Link></div></header><div className="mx-auto max-w-[1320px] px-5 py-8 md:px-10 md:py-10">{children}</div></main>
@@ -620,7 +618,11 @@ function SettingsPage({ workspace, update, user, onSignOut }: { workspace: Works
 }
 
 function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<void> }) {
-  const [workspace, setWorkspace] = useState<Workspace>(() => loadWorkspace());
+  const accountName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+  const [workspace, setWorkspace] = useState<Workspace>(() => {
+    const initial = loadWorkspace();
+    return accountName && initial.profile.name === 'Student' ? { ...initial, profile: { name: accountName } } : initial;
+  });
   const [syncState, setSyncState] = useState<{ status: SyncState; message?: string }>({ status: 'syncing' });
   const deviceId = useRef<string | null>(null);
   if (!deviceId.current) deviceId.current = getDeviceId();
@@ -669,7 +671,7 @@ function AppContent({ user, onSignOut }: { user: User; onSignOut: () => Promise<
       .map((note) => ({ id: `${note.id}:${note.reminder}`, title: note.title, body: note.body, reminder: note.reminder! }));
     void syncDesktopReminders(reminders);
   }, [workspace.notes]);
-  return <Shell workspace={workspace} syncState={syncState}><Switch><Route path="/"><HomePage workspace={workspace} update={update} /></Route><Route path="/workspace"><WorkspacePage workspace={workspace} /></Route><Route path="/library"><LibraryPage workspace={workspace} update={update} /></Route><Route path="/schedule"><SchedulePage workspace={workspace} update={update} /></Route><Route path="/notes"><NotesPage workspace={workspace} update={update} /></Route><Route path="/stats"><StatsPage workspace={workspace} /></Route><Route path="/settings"><SettingsPage workspace={workspace} update={update} user={user} onSignOut={onSignOut} /></Route><Route component={NotFound} /></Switch></Shell>;
+  return <Shell workspace={workspace} syncState={syncState} user={user} onSignOut={onSignOut}><Switch><Route path="/"><HomePage workspace={workspace} update={update} /></Route><Route path="/workspace"><WorkspacePage workspace={workspace} /></Route><Route path="/library"><LibraryPage workspace={workspace} update={update} /></Route><Route path="/schedule"><SchedulePage workspace={workspace} update={update} /></Route><Route path="/notes"><NotesPage workspace={workspace} update={update} /></Route><Route path="/stats"><StatsPage workspace={workspace} /></Route><Route path="/settings"><SettingsPage workspace={workspace} update={update} user={user} onSignOut={onSignOut} /></Route><Route component={NotFound} /></Switch></Shell>;
 }
 function App() {
   const [authState, setAuthState] = useState<AuthState>(() => isSupabaseConfigured ? { status: 'loading' } : { status: 'unconfigured' });

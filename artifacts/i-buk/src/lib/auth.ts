@@ -18,9 +18,13 @@ export async function signInWithPassword(email: string, password: string) {
   return { error, session: data.session };
 }
 
-export async function signUpWithPassword(email: string, password: string) {
+export async function signUpWithPassword(email: string, password: string, fullName: string) {
   if (!supabase) return { error: new Error('Supabase is not configured for this build.'), session: null };
-  const { error, data } = await supabase.auth.signUp({ email, password });
+  const { error, data } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } },
+  });
   return { error, session: data.session };
 }
 
