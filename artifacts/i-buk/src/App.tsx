@@ -154,28 +154,30 @@ function AuthScreen({ configured }: { configured: boolean }) {
     }
   };
 
-  return <main className="grid min-h-screen place-items-center bg-background px-4 py-10">
-    <section className="w-full max-w-md rounded-3xl border border-card-border bg-card p-7 shadow-xl shadow-primary/5 sm:p-9">
-      <div className="flex items-center gap-3">
-        <span className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground"><BookOpen size={21} /></span>
-        <div><div className="font-serif text-2xl">i-Buk</div><div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Study planner</div></div>
-      </div>
-      <div className="mt-9">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Private workspace</p>
-        <h1 className="mt-2 font-serif text-4xl">{configured ? (mode === 'sign-in' ? 'Welcome back.' : 'Create your account.') : 'Cloud sync is not configured.'}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{configured ? 'Sign in to restore your workspace and keep it synced across devices.' : 'Add the Supabase VITE configuration to enable account access for this build.'}</p>
-      </div>
-      {configured ? <form className="mt-7 grid gap-4" onSubmit={submit}>
-        <Field label="Email address"><TextInput autoComplete="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" data-testid="input-auth-email" /></Field>
-        <Field label="Password" hint={mode === 'sign-up' ? 'Use at least 6 characters.' : undefined}><TextInput autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} type="password" minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" data-testid="input-auth-password" /></Field>
-        {error && <p className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive" role="alert" data-testid="text-auth-error">{error}</p>}
-        {notice && <p className="rounded-xl bg-primary/10 px-3 py-2.5 text-sm text-primary" role="status" data-testid="text-auth-notice">{notice}</p>}
-        <Button type="submit" disabled={loading} className="mt-2 w-full py-2.5" data-testid="button-auth-submit">{loading ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
-        <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setNotice(''); }} data-testid="button-auth-toggle">{mode === 'sign-in' ? 'Need an account? Create one' : 'Already have an account? Sign in'}</button>
-      </form> : <div className="mt-7 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground">This screen is ready, but the build does not have a usable Supabase client configuration yet.</div>}
-      <p className="mt-8 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">Your workspace data is scoped to your account. The planner stays empty until you add your own courses and topics.</p>
-    </section>
-  </main>;
+  return (
+    <main className="grid min-h-screen place-items-center bg-background px-4 py-10">
+      <section className="w-full max-w-md rounded-3xl border border-card-border bg-card p-7 shadow-xl shadow-primary/5 sm:p-9">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground"><BookOpen size={21} /></span>
+          <div><div className="font-serif text-2xl">i-Buk</div><div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Study planner</div></div>
+        </div>
+        <div className="mt-9">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Private workspace</p>
+          <h1 className="mt-2 font-serif text-4xl">{configured ? (mode === 'sign-in' ? 'Welcome back.' : 'Create your account.') : 'Cloud sync is not configured.'}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">{configured ? 'Sign in to restore your workspace and keep it synced across devices.' : 'Add the Supabase VITE configuration to enable account access for this build.'}</p>
+        </div>
+        {configured ? <form className="mt-7 grid gap-4" onSubmit={submit}>
+          <Field label="Email address"><TextInput autoComplete="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" data-testid="input-auth-email" /></Field>
+          <Field label="Password" hint={mode === 'sign-up' ? 'Use at least 6 characters.' : undefined}><TextInput autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} type="password" minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" data-testid="input-auth-password" /></Field>
+          {error && <p className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive" role="alert" data-testid="text-auth-error">{error}</p>}
+          {notice && <p className="rounded-xl bg-primary/10 px-3 py-2.5 text-sm text-primary" role="status" data-testid="text-auth-notice">{notice}</p>}
+          <Button type="submit" disabled={loading} className="mt-2 w-full py-2.5" data-testid="button-auth-submit">{loading ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</Button>
+          <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setNotice(''); }} data-testid="button-auth-toggle">{mode === 'sign-in' ? 'Need an account? Create one' : 'Already have an account? Sign in'}</button>
+        </form> : <div className="mt-7 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground">This screen is ready, but the build does not have a usable Supabase client configuration yet.</div>}
+        <p className="mt-8 border-t border-border pt-5 text-xs leading-5 text-muted-foreground">Let us help you get efficient.</p>
+      </section>
+    </main>
+  );
 }
 
 function AccountControls({ user, onSignOut }: { user: User; onSignOut: () => Promise<void> }) {
